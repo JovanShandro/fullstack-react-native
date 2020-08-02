@@ -6,7 +6,8 @@ import {
   Text,
   KeyboardAvoidingView,
   ViewStyle,
-  TextStyle
+  TextStyle,
+  Platform
 } from "react-native";
 import { newTimer } from "./utils/TimerUtils";
 import EditableTimer from "./components/EditableTimer";
@@ -134,7 +135,7 @@ export default class App extends React.Component<{}, State> {
           <Text style={styles.title}>Timers</Text>
         </View>
         <KeyboardAvoidingView
-          behavior="padding"
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.timerListContainer}
         >
           <ScrollView contentContainerStyle={styles.timerList}>
