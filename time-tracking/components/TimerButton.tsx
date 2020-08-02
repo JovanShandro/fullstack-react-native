@@ -14,12 +14,7 @@ type Props = {
   small?: boolean;
 };
 
-export default function TimerButton({
-  color,
-  title,
-  onPress,
-  small = false
-}: Props) {
+const TimerButton = ({ color, title, onPress, small = false }: Props) => {
   return (
     <TouchableOpacity
       style={[styles.button, { borderColor: color }]}
@@ -36,7 +31,7 @@ export default function TimerButton({
       </Text>
     </TouchableOpacity>
   );
-}
+};
 
 interface Style {
   button: ViewStyle;
@@ -65,3 +60,5 @@ const styles = StyleSheet.create<Style>({
     fontWeight: "bold"
   }
 });
+
+export default TimerButton;

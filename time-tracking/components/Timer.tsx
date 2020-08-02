@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { StyleSheet, View, Text, ViewStyle, TextStyle } from "react-native";
 import TimerButton from "./TimerButton";
 import { Timer as TimerType } from "../utils/types";
@@ -11,70 +11,61 @@ type Props = {
   onStopPress(timerId: string): void;
 } & TimerType;
 
-export default class Timer extends Component<Props, {}> {
-  handleStartPress = () => {
-    const { id, onStartPress } = this.props;
-
+const Timer = ({
+  id,
+  elapsed,
+  title,
+  project,
+  isRunning,
+  onStartPress,
+  onStopPress,
+  onRemovePress,
+  onEditPress
+}: Props) => {
+  const handleStartPress = () => {
     onStartPress(id);
   };
 
-  handleStopPress = () => {
-    const { id, onStopPress } = this.props;
-
+  const handleStopPress = () => {
     onStopPress(id);
   };
 
-  handleRemovePress = () => {
-    const { id, onRemovePress } = this.props;
-
+  const handleRemovePress = () => {
     onRemovePress(id);
   };
 
-  renderActionButton() {
-    const { isRunning } = this.props;
-
+  const renderActionButton = () => {
     if (isRunning) {
       return (
-        <TimerButton
-          color="#DB2828"
-          title="Stop"
-          onPress={this.handleStopPress}
-        />
+        <TimerButton color="#DB2828" title="Stop" onPress={handleStopPress} />
       );
     }
 
     return (
-      <TimerButton
-        color="#21BA45"
-        title="Start"
-        onPress={this.handleStartPress}
-      />
+      <TimerButton color="#21BA45" title="Start" onPress={handleStartPress} />
     );
-  }
+  };
 
-  render() {
-    const { elapsed, title, project, onEditPress } = this.props;
-    const elapsedString: string = millisecondsToHuman(elapsed);
+  const elapsedString: string = millisecondsToHuman(elapsed);
 
-    return (
-      <View style={styles.timerContainer}>
-        <Text style={styles.title}>{title}</Text>
-        <Text>{project}</Text>
-        <Text style={styles.elapsedTime}>{elapsedString}</Text>
-        <View style={styles.buttonGroup}>
-          <TimerButton color="blue" small title="Edit" onPress={onEditPress} />
-          <TimerButton
-            color="blue"
-            small
-            title="Remove"
-            onPress={this.handleRemovePress}
-          />
-        </View>
-        {this.renderActionButton()}
+  return (
+    <View style={styles.timerContainer}>
+      <Text style={styles.title}>{title}</Text>
+      <Text>{project}</Text>
+      <Text style={styles.elapsedTime}>{elapsedString}</Text>
+      <View style={styles.buttonGroup}>
+        <TimerButton color="blue" small title="Edit" onPress={onEditPress} />
+        <TimerButton
+          color="blue"
+          small
+          title="Remove"
+          onPress={handleRemovePress}
+        />
       </View>
-    );
-  }
-}
+      {renderActionButton()}
+    </View>
+  );
+};
 
 interface Style {
   timerContainer: ViewStyle;
@@ -107,3 +98,5 @@ const styles = StyleSheet.create<Style>({
     justifyContent: "space-between"
   }
 });
+
+export default Timer;
