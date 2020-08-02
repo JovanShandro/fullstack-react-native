@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,112 +19,98 @@ import getImageForWeather from "./utils/getImageForWeather";
 import SearchInput from "./components/SearchInput";
 import { weather_type, fetchWeatherResponse } from "./utils/types";
 
-interface State {
-  loading: boolean;
-  error: boolean;
-  location: string;
-  temperature: number;
-  weather: weather_type;
-}
+const App = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [location, setLocation] = useState("");
+  const [city, setCity] = useState("");
+  const [temperature, setTemperature] = useState(0);
+  const [weather, setWeather] = useState<weather_type>("Clear"); // just a default value that will be overwritten
 
-export default class App extends React.Component<{}, State> {
-  state: State = {
-    loading: false,
-    error: false,
-    location: "",
-    temperature: 0,
-    weather: "Clear" // just a default value that will be overwritten
+  useEffect(() => {
+    handleUpdateLocation("San Francisco");
+  }, []);
+
+  useEffect(() => {
+    handleAsync();
+  }, [loading, city]);
+
+  const handleAsync = async () => {
+    try {
+      const locationId: number = await fetchLocationId(city);
+      const {
+        location,
+        weather,
+        temperature
+      }: fetchWeatherResponse = await fetchWeather(locationId);
+
+      setLoading(false);
+      setError(false);
+      setLocation(location);
+      setWeather(weather);
+      setTemperature(temperature);
+    } catch (e) {
+      setLoading(false);
+      setError(true);
+    }
   };
 
-  componentDidMount() {
-    this.handleUpdateLocation("San Francisco");
-  }
-
-  handleUpdateLocation = async (city: string) => {
+  const handleUpdateLocation = async (city: string) => {
     if (!city) return;
 
-    this.setState({ loading: true }, async () => {
-      try {
-        const locationId: number = await fetchLocationId(city);
-        const {
-          location,
-          weather,
-          temperature
-        }: fetchWeatherResponse = await fetchWeather(locationId);
-
-        this.setState({
-          loading: false,
-          error: false,
-          location,
-          weather,
-          temperature
-        });
-      } catch (e) {
-        this.setState({
-          loading: false,
-          error: true
-        });
-      }
-    });
+    setLoading(true);
+    setCity(city);
   };
 
-  render() {
-    const { loading, error, location, weather, temperature } = this.state;
-
-    return (
-      <TouchableWithoutFeedback
+  return (
+    <TouchableWithoutFeedback
+      style={styles.container}
+      onPress={() => Keyboard.dismiss()}
+    >
+      <KeyboardAvoidingView
         style={styles.container}
-        onPress={() => Keyboard.dismiss()}
+        behavior={Platform.OS == "ios" ? "padding" : "height"}
       >
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS == "ios" ? "padding" : "height"}
+        <StatusBar barStyle="light-content" />
+        <ImageBackground
+          source={getImageForWeather(weather)}
+          style={styles.imageContainer}
+          imageStyle={styles.image}
         >
-          <StatusBar barStyle="light-content" />
-          <ImageBackground
-            source={getImageForWeather(weather)}
-            style={styles.imageContainer}
-            imageStyle={styles.image}
-          >
-            <View style={styles.detailsContainer}>
-              <ActivityIndicator
-                animating={loading}
-                color="white"
-                size="large"
-              />
+          <View style={styles.detailsContainer}>
+            <ActivityIndicator animating={loading} color="white" size="large" />
 
-              {!loading && (
-                <View>
-                  {error && (
-                    <Text style={[styles.smallText, styles.textStyle]}>
-                      Could not load weather, please try a different city.
+            {!loading && (
+              <View>
+                {error && (
+                  <Text style={[styles.smallText, styles.textStyle]}>
+                    Could not load weather, please try a different city.
+                  </Text>
+                )}
+
+                {!error && (
+                  <View>
+                    <Text style={[styles.largeText, styles.textStyle]}>
+                      {location}
                     </Text>
-                  )}
+                    <Text style={[styles.smallText, styles.textStyle]}>
+                      {weather}
+                    </Text>
+                    <Text style={[styles.largeText, styles.textStyle]}>
+                      {`${Math.round(temperature)}°`}
+                    </Text>
+                  </View>
+                )}
 
-                  {!error && (
-                    <View>
-                      <Text style={[styles.largeText, styles.textStyle]}>
-                        {location}
-                      </Text>
-                      <Text style={[styles.smallText, styles.textStyle]}>
-                        {weather}
-                      </Text>
-                      <Text style={[styles.largeText, styles.textStyle]}>
-                        {`${Math.round(temperature)}°`}
-                      </Text>
-                    </View>
-                  )}
-
-                  <SearchInput onSubmit={this.handleUpdateLocation} />
-                </View>
-              )}
-            </View>
-          </ImageBackground>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
-    );
-  }
-}
+                <SearchInput onSubmit={handleUpdateLocation} />
+              </View>
+            )}
+          </View>
+        </ImageBackground>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -168,3 +154,5 @@ const styles = StyleSheet.create<Style>({
     fontSize: 18
   }
 });
+
+export default App;

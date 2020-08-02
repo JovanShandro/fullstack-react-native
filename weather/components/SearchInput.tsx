@@ -1,62 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, TextInput, View, ViewStyle } from "react-native";
 
-type Props = {
+interface Props {
   onSubmit(city: string): void;
-} & Partial<DefaultProps>;
-
-type DefaultProps = {
   placeholder: string;
-};
-
-interface State {
-  text: string;
 }
 
-export default class SearchInput extends React.Component<Props, State> {
-  static defaultProps: DefaultProps = {
-    placeholder: ""
+const SearchInput = ({ onSubmit, placeholder = "" }: Props) => {
+  const [text, setText] = useState("");
+
+  const handleChangeText = (text: string) => {
+    setText(text);
   };
 
-  state: State = {
-    text: ""
-  };
-
-  handleChangeText = (text: string) => {
-    this.setState({ text });
-  };
-
-  handleSubmitEditing = () => {
-    const { onSubmit } = this.props;
-    const { text } = this.state;
-
+  const handleSubmitEditing = () => {
     if (!text) return;
 
     onSubmit(text);
-    this.setState({ text: "" });
+    setText("");
   };
 
-  render() {
-    const { placeholder } = this.props;
-    const { text } = this.state;
-
-    return (
-      <View style={styles.container}>
-        <TextInput
-          autoCorrect={false}
-          value={text}
-          placeholder={placeholder}
-          placeholderTextColor="white"
-          underlineColorAndroid="transparent"
-          style={styles.textInput}
-          clearButtonMode="always"
-          onChangeText={this.handleChangeText}
-          onSubmitEditing={this.handleSubmitEditing}
-        />
-      </View>
-    );
-  }
-}
+  return (
+    <View style={styles.container}>
+      <TextInput
+        autoCorrect={false}
+        value={text}
+        placeholder={placeholder}
+        placeholderTextColor="white"
+        underlineColorAndroid="transparent"
+        style={styles.textInput}
+        clearButtonMode="always"
+        onChangeText={handleChangeText}
+        onSubmitEditing={handleSubmitEditing}
+      />
+    </View>
+  );
+};
 
 interface Style {
   textInput: ViewStyle;
@@ -77,3 +56,5 @@ const styles = StyleSheet.create<Style>({
     color: "white"
   }
 });
+
+export default SearchInput;
