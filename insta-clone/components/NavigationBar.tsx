@@ -13,20 +13,19 @@ interface Props {
   leftText?: string;
   onPressLeftText?(): void;
 }
-export default function NavigationBar({
+
+const NavigationBar = ({
   title = "",
   leftText = "",
   onPressLeftText = () => {}
-}: Props) {
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.leftText} onPress={onPressLeftText}>
-        <Text>{leftText}</Text>
-      </TouchableOpacity>
-      <Text style={styles.title}>{title}</Text>
-    </View>
-  );
-}
+}: Props) => (
+  <View style={styles.container}>
+    <TouchableOpacity style={styles.leftText} onPress={onPressLeftText}>
+      <Text>{leftText}</Text>
+    </TouchableOpacity>
+    <Text style={styles.title}>{title}</Text>
+  </View>
+);
 
 interface Style {
   container: ViewStyle;
@@ -53,3 +52,5 @@ const styles = StyleSheet.create<Style>({
     justifyContent: "center"
   }
 });
+
+export default NavigationBar;

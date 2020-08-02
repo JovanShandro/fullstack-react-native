@@ -1,3 +1,4 @@
+import React from "react";
 import {
   StyleSheet,
   ViewStyle,
@@ -6,7 +7,6 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import React from "react";
 import Avatar from "./Avatar";
 import getAvatarColor from "../utils/getAvatarColor";
 import getInitials from "../utils/getInitials";
@@ -17,29 +17,23 @@ interface Props {
   onPressLinkText(): void;
 }
 
-export default function AuthorRow({
-  fullname,
-  linkText,
-  onPressLinkText
-}: Props) {
-  return (
-    <View style={styles.container}>
-      <Avatar
-        size={35}
-        initials={getInitials(fullname)}
-        backgroundColor={getAvatarColor(fullname)}
-      />
-      <Text style={styles.text} numberOfLines={1}>
-        {fullname}
-      </Text>
-      {!!linkText && (
-        <TouchableOpacity onPress={onPressLinkText}>
-          <Text numberOfLines={1}>{linkText}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
+const AuthorRow = ({ fullname, linkText, onPressLinkText }: Props) => (
+  <View style={styles.container}>
+    <Avatar
+      size={35}
+      initials={getInitials(fullname)}
+      backgroundColor={getAvatarColor(fullname)}
+    />
+    <Text style={styles.text} numberOfLines={1}>
+      {fullname}
+    </Text>
+    {!!linkText && (
+      <TouchableOpacity onPress={onPressLinkText}>
+        <Text numberOfLines={1}>{linkText}</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
 
 interface Style {
   container: ViewStyle;
@@ -58,3 +52,5 @@ const styles = StyleSheet.create<Style>({
     marginHorizontal: 6
   }
 });
+
+export default AuthorRow;

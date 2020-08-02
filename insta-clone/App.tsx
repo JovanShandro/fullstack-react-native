@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   AsyncStorage,
   Modal,
@@ -14,35 +14,28 @@ import { CommentsForItem } from "./utils/types";
 
 const ASYNC_STORAGE_COMMENTS_KEY = "ASYNC_STORAGE_COMMENTS_KEY";
 
-type State = {
-  showModal: boolean;
-  selectedItemId: number;
-  commentsForItem: CommentsForItem;
-};
+const App = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState(-1);
+  const [commentsForItem, setCommentsForItem] = useState<CommentsForItem>({});
 
-export default class App extends React.Component<{}, State> {
-  state: State = {
-    commentsForItem: {},
-    showModal: false,
-    selectedItemId: -1
-  };
+  useEffect(() => {
+    handleAsync();
+  }, []);
 
-  async componentDidMount() {
+  const handleAsync = async () => {
     try {
       const commentsForItem = await AsyncStorage.getItem(
         ASYNC_STORAGE_COMMENTS_KEY
       );
 
-      this.setState({
-        commentsForItem: commentsForItem ? JSON.parse(commentsForItem) : {}
-      });
+      setCommentsForItem(commentsForItem ? JSON.parse(commentsForItem) : {});
     } catch (e) {
       console.log("Failed to load comments");
     }
-  }
+  };
 
-  onSubmitComment = (text: string) => {
-    const { selectedItemId, commentsForItem } = this.state;
+  const onSubmitComment = (text: string) => {
     const comments = commentsForItem[selectedItemId] || [];
 
     const updated = {
@@ -50,7 +43,7 @@ export default class App extends React.Component<{}, State> {
       [selectedItemId]: [...comments, text]
     };
 
-    this.setState({ commentsForItem: updated });
+    setCommentsForItem(updated);
 
     try {
       AsyncStorage.setItem(ASYNC_STORAGE_COMMENTS_KEY, JSON.stringify(updated));
@@ -59,46 +52,38 @@ export default class App extends React.Component<{}, State> {
     }
   };
 
-  openCommentScreen = (id: number) => {
-    this.setState({
-      showModal: true,
-      selectedItemId: id
-    });
+  const openCommentScreen = (id: number) => {
+    setShowModal(true);
+    setSelectedItemId(id);
   };
 
-  closeCommentScreen = () => {
-    this.setState({
-      showModal: false,
-      selectedItemId: -1
-    });
+  const closeCommentScreen = () => {
+    setShowModal(false);
+    setSelectedItemId(-1);
   };
 
-  render() {
-    const { commentsForItem, showModal, selectedItemId } = this.state;
-
-    return (
-      <View style={styles.container}>
-        <Feed
-          style={styles.feed}
-          commentsForItem={commentsForItem}
-          onPressComments={this.openCommentScreen}
+  return (
+    <View style={styles.container}>
+      <Feed
+        style={styles.feed}
+        commentsForItem={commentsForItem}
+        onPressComments={openCommentScreen}
+      />
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        onRequestClose={closeCommentScreen}
+      >
+        <Comments
+          style={styles.comments}
+          comments={commentsForItem[selectedItemId] || []}
+          onClose={closeCommentScreen}
+          onSubmitComment={onSubmitComment}
         />
-        <Modal
-          visible={showModal}
-          animationType="slide"
-          onRequestClose={this.closeCommentScreen}
-        >
-          <Comments
-            style={styles.comments}
-            comments={commentsForItem[selectedItemId] || []}
-            onClose={this.closeCommentScreen}
-            onSubmitComment={this.onSubmitComment}
-          />
-        </Modal>
-      </View>
-    );
-  }
-}
+      </Modal>
+    </View>
+  );
+};
 
 const platformVersion =
   Platform.OS === "ios"
@@ -131,3 +116,5 @@ const styles = StyleSheet.create<Style>({
         : 0
   }
 });
+
+export default App;

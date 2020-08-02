@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, SafeAreaView, ViewStyle } from "react-native";
 import { fetchImages } from "../utils/api";
 import CardList from "../components/CardList";
@@ -7,65 +7,47 @@ import { CommentsForItem, ImageArray } from "../utils/types";
 type Props = {
   commentsForItem: CommentsForItem;
   onPressComments(id: number): void;
-} & DefaultProps;
-
-type DefaultProps = {
   style: ViewStyle | null;
 };
 
-interface State {
-  loading: boolean;
-  error: boolean;
-  items: ImageArray;
-}
+const Feed = ({ style = null, commentsForItem, onPressComments }: Props) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [items, setItems] = useState<ImageArray>([]);
 
-export default class Feed extends React.Component<Props, State> {
-  static defaultProps: DefaultProps = {
-    style: null
-  };
+  useEffect(() => {
+    handleAsync();
+  }, []);
 
-  state: State = {
-    loading: true,
-    error: false,
-    items: []
-  };
-
-  async componentDidMount() {
+  const handleAsync = async () => {
     try {
       const items = await fetchImages();
 
-      this.setState({
-        loading: false,
-        items
-      });
+      setLoading(false);
+      setItems(items);
     } catch (e) {
-      this.setState({
-        loading: false,
-        error: true
-      });
+      setLoading(false);
+      setError(true);
     }
+  };
+
+  if (loading) {
+    return <ActivityIndicator size="large" />;
   }
 
-  render() {
-    const { commentsForItem, onPressComments, style } = this.props;
-    const { loading, error, items } = this.state;
-
-    if (loading) {
-      return <ActivityIndicator size="large" />;
-    }
-
-    if (error) {
-      return <Text>Error...</Text>;
-    }
-
-    return (
-      <SafeAreaView style={style}>
-        <CardList
-          items={items}
-          commentsForItem={commentsForItem}
-          onPressComments={onPressComments}
-        />
-      </SafeAreaView>
-    );
+  if (error) {
+    return <Text>Error...</Text>;
   }
-}
+
+  return (
+    <SafeAreaView style={style}>
+      <CardList
+        items={items}
+        commentsForItem={commentsForItem}
+        onPressComments={onPressComments}
+      />
+    </SafeAreaView>
+  );
+};
+
+export default Feed;

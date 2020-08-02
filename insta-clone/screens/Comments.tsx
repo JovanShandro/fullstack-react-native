@@ -11,21 +11,21 @@ interface Props {
   style: ViewStyle | null;
 }
 
-export default function Comments({
+const Comments = ({
   comments,
   onClose,
   onSubmitComment,
   style = null
-}: Props) {
-  return (
-    <SafeAreaView style={style}>
-      <NavigationBar
-        title="Comments"
-        leftText="Close"
-        onPressLeftText={onClose}
-      />
-      <CommentInput placeholder="Leave a comment" onSubmit={onSubmitComment} />
-      <CommentList items={comments} />
-    </SafeAreaView>
-  );
-}
+}: Props) => (
+  <SafeAreaView style={style}>
+    <NavigationBar
+      title="Comments"
+      leftText="Close"
+      onPressLeftText={onClose}
+    />
+    <CommentInput placeholder="Leave a comment" onSubmit={onSubmitComment} />
+    <CommentList items={comments} />
+  </SafeAreaView>
+);
+
+export default Comments;

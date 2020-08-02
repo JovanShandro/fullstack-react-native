@@ -5,19 +5,15 @@ interface Props {
   items: string[];
 }
 
-export default class CommentList extends React.Component<Props, {}> {
-  renderItem = (item: string, index: number) => (
+const CommentList = ({ items }: Props) => {
+  const renderItem = (item: string, index: number) => (
     <View key={index} style={styles.comment}>
       <Text>{item}</Text>
     </View>
   );
 
-  render() {
-    const { items } = this.props;
-
-    return <ScrollView>{items.map(this.renderItem)}</ScrollView>;
-  }
-}
+  return <ScrollView>{items.map(renderItem)}</ScrollView>;
+};
 
 interface Style {
   comment: ViewStyle;
@@ -32,3 +28,5 @@ const styles = StyleSheet.create<Style>({
     borderBottomColor: "rgba(0,0,0,0.05)"
   }
 });
+
+export default CommentList;

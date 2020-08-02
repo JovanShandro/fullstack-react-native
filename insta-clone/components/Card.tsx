@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -5,7 +6,6 @@ import {
   StyleSheet,
   View
 } from "react-native";
-import React from "react";
 import AuthorRow from "./AuthorRow";
 
 interface Props {
@@ -15,44 +15,33 @@ interface Props {
   onPressLinkText(): void;
 }
 
-interface State {
-  loading: boolean;
-}
+const Card = ({ fullname, image, linkText, onPressLinkText }: Props) => {
+  const [loading, setLoading] = useState(true);
 
-export default class Card extends React.Component<Props, State> {
-  state: State = {
-    loading: true
+  const handleLoad = () => {
+    setLoading(false);
   };
 
-  handleLoad = () => {
-    this.setState({ loading: false });
-  };
-
-  render() {
-    const { fullname, image, linkText, onPressLinkText } = this.props;
-    const { loading } = this.state;
-
-    return (
-      <View>
-        <AuthorRow
-          fullname={fullname}
-          linkText={linkText}
-          onPressLinkText={onPressLinkText}
+  return (
+    <View>
+      <AuthorRow
+        fullname={fullname}
+        linkText={linkText}
+        onPressLinkText={onPressLinkText}
+      />
+      <View style={styles.image}>
+        {loading && (
+          <ActivityIndicator style={StyleSheet.absoluteFill} size={"large"} />
+        )}
+        <Image
+          style={StyleSheet.absoluteFill}
+          source={image}
+          onLoad={handleLoad}
         />
-        <View style={styles.image}>
-          {loading && (
-            <ActivityIndicator style={StyleSheet.absoluteFill} size={"large"} />
-          )}
-          <Image
-            style={StyleSheet.absoluteFill}
-            source={image}
-            onLoad={this.handleLoad}
-          />
-        </View>
       </View>
-    );
-  }
-}
+    </View>
+  );
+};
 
 interface Style {
   image: ImageStyle;
@@ -64,3 +53,5 @@ const styles = StyleSheet.create<Style>({
     backgroundColor: "rgba(0,0,0,0.02)"
   }
 });
+
+export default Card;

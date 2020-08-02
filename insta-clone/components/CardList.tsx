@@ -19,9 +19,8 @@ interface Item {
 
 const keyExtractor = ({ id }: { id: number }) => id.toString();
 
-export default class CardList extends React.Component<Props, {}> {
-  renderItem = ({ item: { id, author } }: Item) => {
-    const { commentsForItem, onPressComments } = this.props;
+const CardList = ({ items, commentsForItem, onPressComments }: Props) => {
+  const renderItem = ({ item: { id, author } }: Item) => {
     const comments = commentsForItem[id];
 
     return (
@@ -36,16 +35,14 @@ export default class CardList extends React.Component<Props, {}> {
     );
   };
 
-  render() {
-    const { items, commentsForItem } = this.props;
+  return (
+    <FlatList
+      data={items}
+      extraData={commentsForItem}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+    />
+  );
+};
 
-    return (
-      <FlatList
-        data={items}
-        extraData={commentsForItem}
-        renderItem={this.renderItem}
-        keyExtractor={keyExtractor}
-      />
-    );
-  }
-}
+export default CardList;

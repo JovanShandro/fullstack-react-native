@@ -1,12 +1,12 @@
-import { StyleSheet, ViewStyle, TextStyle, Text, View } from "react-native";
 import React from "react";
+import { StyleSheet, ViewStyle, TextStyle, Text, View } from "react-native";
 
 interface Props {
   initials: string;
   size: number;
   backgroundColor: string;
 }
-export default function Avatar({ size, backgroundColor, initials }: Props) {
+const Avatar = ({ size, backgroundColor, initials }: Props) => {
   const style = {
     width: size,
     height: size,
@@ -19,7 +19,7 @@ export default function Avatar({ size, backgroundColor, initials }: Props) {
       <Text style={styles.text}>{initials}</Text>
     </View>
   );
-}
+};
 
 interface Style {
   container: ViewStyle;
@@ -35,3 +35,5 @@ const styles = StyleSheet.create<Style>({
     color: "white"
   }
 });
+
+export default Avatar;
