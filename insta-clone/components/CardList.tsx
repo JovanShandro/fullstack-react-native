@@ -19,7 +19,11 @@ interface Item {
 
 const keyExtractor = ({ id }: { id: number }) => id.toString();
 
-const CardList = ({ items, commentsForItem, onPressComments }: Props) => {
+const CardList: React.FC<Props> = ({
+  items,
+  commentsForItem,
+  onPressComments
+}) => {
   const renderItem = ({ item: { id, author } }: Item) => {
     const comments = commentsForItem[id];
 

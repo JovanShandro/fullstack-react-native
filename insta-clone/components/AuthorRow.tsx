@@ -17,7 +17,11 @@ interface Props {
   onPressLinkText(): void;
 }
 
-const AuthorRow = ({ fullname, linkText, onPressLinkText }: Props) => (
+const AuthorRow: React.FC<Props> = ({
+  fullname,
+  linkText,
+  onPressLinkText
+}) => (
   <View style={styles.container}>
     <Avatar
       size={35}

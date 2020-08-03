@@ -14,11 +14,11 @@ interface Props {
   onPressLeftText?(): void;
 }
 
-const NavigationBar = ({
+const NavigationBar: React.FC<Props> = ({
   title = "",
   leftText = "",
   onPressLeftText = () => {}
-}: Props) => (
+}) => (
   <View style={styles.container}>
     <TouchableOpacity style={styles.leftText} onPress={onPressLeftText}>
       <Text>{leftText}</Text>

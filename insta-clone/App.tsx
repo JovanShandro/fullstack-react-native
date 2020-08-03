@@ -14,7 +14,7 @@ import { CommentsForItem } from "./utils/types";
 
 const ASYNC_STORAGE_COMMENTS_KEY = "ASYNC_STORAGE_COMMENTS_KEY";
 
-const App = () => {
+const App: React.FC<{}> = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(-1);
   const [commentsForItem, setCommentsForItem] = useState<CommentsForItem>({});

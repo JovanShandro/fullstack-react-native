@@ -11,12 +11,12 @@ interface Props {
   style: ViewStyle | null;
 }
 
-const Comments = ({
+const Comments: React.FC<Props> = ({
   comments,
   onClose,
   onSubmitComment,
   style = null
-}: Props) => (
+}) => (
   <SafeAreaView style={style}>
     <NavigationBar
       title="Comments"

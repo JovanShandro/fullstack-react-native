@@ -10,7 +10,11 @@ type Props = {
   style: ViewStyle | null;
 };
 
-const Feed = ({ style = null, commentsForItem, onPressComments }: Props) => {
+const Feed: React.FC<Props> = ({
+  style = null,
+  commentsForItem,
+  onPressComments
+}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [items, setItems] = useState<ImageArray>([]);

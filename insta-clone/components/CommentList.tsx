@@ -5,7 +5,7 @@ interface Props {
   items: string[];
 }
 
-const CommentList = ({ items }: Props) => {
+const CommentList: React.FC<Props> = ({ items }) => {
   const renderItem = (item: string, index: number) => (
     <View key={index} style={styles.comment}>
       <Text>{item}</Text>

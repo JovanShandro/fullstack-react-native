@@ -6,7 +6,7 @@ type Props = {
   placeholder?: string;
 };
 
-const CommentInput = ({ placeholder = "", onSubmit }: Props) => {
+const CommentInput: React.FC<Props> = ({ placeholder = "", onSubmit }) => {
   const [text, setText] = useState("");
 
   const handleChangeText = (text: string) => {

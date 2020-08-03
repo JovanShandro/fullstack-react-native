@@ -6,7 +6,7 @@ interface Props {
   size: number;
   backgroundColor: string;
 }
-const Avatar = ({ size, backgroundColor, initials }: Props) => {
+const Avatar: React.FC<Props> = ({ size, backgroundColor, initials }) => {
   const style = {
     width: size,
     height: size,

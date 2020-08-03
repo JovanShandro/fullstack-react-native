@@ -15,7 +15,12 @@ interface Props {
   onPressLinkText(): void;
 }
 
-const Card = ({ fullname, image, linkText, onPressLinkText }: Props) => {
+const Card: React.FC<Props> = ({
+  fullname,
+  image,
+  linkText,
+  onPressLinkText
+}) => {
   const [loading, setLoading] = useState(true);
 
   const handleLoad = () => {
