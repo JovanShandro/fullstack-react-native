@@ -11,7 +11,7 @@ type Props = {
   onStopPress(timerId: string): void;
 } & TimerType;
 
-const Timer = ({
+const Timer: React.FC<Props> = ({
   id,
   elapsed,
   title,
@@ -21,7 +21,7 @@ const Timer = ({
   onStopPress,
   onRemovePress,
   onEditPress
-}: Props) => {
+}) => {
   const handleStartPress = () => {
     onStartPress(id);
   };

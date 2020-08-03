@@ -10,7 +10,7 @@ type Props = {
   onStopPress(timerId: string): void;
 } & TimerType;
 
-const EditableTimer = ({
+const EditableTimer: React.FC<Props> = ({
   id,
   title,
   project,
@@ -20,7 +20,7 @@ const EditableTimer = ({
   onRemovePress,
   onStartPress,
   onStopPress
-}: Props) => {
+}) => {
   const [editFormOpen, setEditFormOpen] = useState(false);
 
   const handleEditPress = () => {

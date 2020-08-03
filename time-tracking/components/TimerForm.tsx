@@ -18,13 +18,13 @@ type Props = {
   project?: string;
 };
 
-const TimerForm = ({
+const TimerForm: React.FC<Props> = ({
   id = "",
   title = "",
   project = "",
   onFormSubmit,
   onFormClose
-}: Props) => {
+}) => {
   const [titleState, setTitle] = useState(id ? title : "");
   const [projectState, setProject] = useState(id ? project : "");
 

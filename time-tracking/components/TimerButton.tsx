@@ -14,7 +14,12 @@ type Props = {
   small?: boolean;
 };
 
-const TimerButton = ({ color, title, onPress, small = false }: Props) => {
+const TimerButton: React.FC<Props> = ({
+  color,
+  title,
+  onPress,
+  small = false
+}) => {
   return (
     <TouchableOpacity
       style={[styles.button, { borderColor: color }]}

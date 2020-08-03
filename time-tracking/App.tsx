@@ -39,7 +39,7 @@ const initialState = [
   }
 ];
 
-const App = () => {
+const App: React.FC<{}> = () => {
   const [timers, setTimers] = useState<Timer[]>(initialState);
   const intervalId = useRef(-1);
 

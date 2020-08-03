@@ -8,7 +8,7 @@ interface Props {
   onFormSubmit(timer: Timer): void;
 }
 
-const ToggleableTimerForm = ({ onFormSubmit }: Props) => {
+const ToggleableTimerForm: React.FC<Props> = ({ onFormSubmit }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleFormOpen = () => {
