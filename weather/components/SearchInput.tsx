@@ -6,7 +6,7 @@ interface Props {
   placeholder: string;
 }
 
-const SearchInput = ({ onSubmit, placeholder = "" }: Props) => {
+const SearchInput: React.FC<Props> = ({ onSubmit, placeholder = "" }) => {
   const [text, setText] = useState("");
 
   const handleChangeText = (text: string) => {

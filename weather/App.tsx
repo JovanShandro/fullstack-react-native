@@ -19,7 +19,7 @@ import getImageForWeather from "./utils/getImageForWeather";
 import SearchInput from "./components/SearchInput";
 import { weather_type, fetchWeatherResponse } from "./utils/types";
 
-const App = () => {
+const App: React.FC<{}> = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [location, setLocation] = useState("");
