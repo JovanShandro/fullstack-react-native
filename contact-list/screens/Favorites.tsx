@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -20,49 +20,39 @@ interface Props {
   };
 }
 
-interface State {
-  contacts: MappedContact[];
-  loading: boolean;
-  error?: boolean;
-}
-
 const keyExtractor = ({ phone }: { phone: string }) => phone;
 
-export default class Favorites extends React.Component<Props, State> {
-  state: State = {
-    contacts: store.getState().contacts,
-    loading: store.getState().isFetchingContacts,
-    error: store.getState().error
-  };
+const Favorites: React.FC<Props> = ({ navigation: { navigate } }) => {
+  const [contacts, setContacts] = useState<MappedContact[]>(
+    store.getState().contacts
+  );
+  const [loading, setLoading] = useState(store.getState().isFetchingContacts);
+  const [error, setError] = useState(store.getState().error);
+  const unsubscribe = useRef<Subscription>();
 
-  unsubscribe: Subscription = () => [];
+  useEffect(() => {
+    handleAsync();
 
-  async componentDidMount() {
-    const { contacts } = this.state;
+    return () => {
+      unsubscribe.current!();
+    };
+  }, []);
 
-    this.unsubscribe = store.onChange(() =>
-      this.setState({
-        contacts: store.getState().contacts,
-        loading: store.getState().isFetchingContacts,
-        error: store.getState().error
-      })
-    );
+  const handleAsync = async () => {
+    unsubscribe.current = store.onChange(() => {
+      setContacts(store.getState().contacts);
+      setLoading(store.getState().isFetchingContacts);
+      setError(store.getState().error);
+    });
 
     if (contacts.length === 0) {
       const fetchedContacts = await fetchContacts();
 
       store.setState({ contacts: fetchedContacts, isFetchingContacts: false });
     }
-  }
+  };
 
-  componentWillUnmount() {
-    this.unsubscribe();
-  }
-
-  renderFavoriteThumbnail = ({ item }: { item: MappedContact }) => {
-    const {
-      navigation: { navigate }
-    } = this.props;
+  const renderFavoriteThumbnail = ({ item }: { item: MappedContact }) => {
     const { avatar } = item;
 
     return (
@@ -73,28 +63,25 @@ export default class Favorites extends React.Component<Props, State> {
     );
   };
 
-  render() {
-    const { contacts, loading, error } = this.state;
-    const favorites = contacts.filter(contact => contact.favorite);
+  const favorites = contacts.filter(contact => contact.favorite);
 
-    return (
-      <View style={styles.container}>
-        {loading && <ActivityIndicator size="large" />}
-        {error && <Text>Error...</Text>}
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text>Error...</Text>}
 
-        {!loading && !error && (
-          <FlatList
-            data={favorites}
-            keyExtractor={keyExtractor}
-            numColumns={3}
-            contentContainerStyle={styles.list}
-            renderItem={this.renderFavoriteThumbnail}
-          />
-        )}
-      </View>
-    );
-  }
-}
+      {!loading && !error && (
+        <FlatList
+          data={favorites}
+          keyExtractor={keyExtractor}
+          numColumns={3}
+          contentContainerStyle={styles.list}
+          renderItem={renderFavoriteThumbnail}
+        />
+      )}
+    </View>
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -111,3 +98,5 @@ const styles = StyleSheet.create<Style>({
     alignItems: "center"
   }
 });
+
+export default Favorites;

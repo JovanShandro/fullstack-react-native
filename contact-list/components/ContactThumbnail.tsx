@@ -19,13 +19,13 @@ interface Props {
   onPress?: () => void;
 }
 
-export default function ContactThumbnail({
+const ContactThumbnail: React.FC<Props> = ({
   name = "",
   phone = "",
   avatar,
   textColor = "white",
   onPress
-}: Props) {
+}: Props) => {
   const colorStyle = {
     color: textColor
   };
@@ -51,7 +51,7 @@ export default function ContactThumbnail({
       )}
     </View>
   );
-}
+};
 
 interface Style {
   container: ViewStyle;
@@ -93,3 +93,5 @@ const styles = StyleSheet.create<Style>({
     fontWeight: "bold"
   }
 });
+
+export default ContactThumbnail;

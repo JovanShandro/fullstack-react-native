@@ -10,7 +10,7 @@ import User from "./screens/User";
 import Options from "./screens/Options";
 import colors from "./utils/colors";
 import store from "./store";
-import { MappedContact, StoreState } from "./utils/types";
+import { MappedContact } from "./utils/types";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -126,42 +126,42 @@ const UserScreens = () => {
 };
 
 // Main Tab Navigator
-export default function App() {
-  return (
-    <NavigationContainer>
-      <Tab.Navigator
-        initialRouteName="Contacts"
-        tabBarOptions={{
-          style: {
-            backgroundColor: colors.greyLight
-          },
-          showLabel: false,
-          activeTintColor: colors.blue,
-          inactiveTintColor: colors.greyDark
+const App: React.FC<{}> = () => (
+  <NavigationContainer>
+    <Tab.Navigator
+      initialRouteName="Contacts"
+      tabBarOptions={{
+        style: {
+          backgroundColor: colors.greyLight
+        },
+        showLabel: false,
+        activeTintColor: colors.blue,
+        inactiveTintColor: colors.greyDark
+      }}
+    >
+      <Tab.Screen
+        name="Contacts"
+        component={ContactsScreens}
+        options={{
+          tabBarIcon: getTabBarIcon("list")
         }}
-      >
-        <Tab.Screen
-          name="Contacts"
-          component={ContactsScreens}
-          options={{
-            tabBarIcon: getTabBarIcon("list")
-          }}
-        />
-        <Tab.Screen
-          name="Favorites"
-          component={FavoritesScreens}
-          options={{
-            tabBarIcon: getTabBarIcon("star")
-          }}
-        />
-        <Tab.Screen
-          name="User"
-          component={UserScreens}
-          options={{
-            tabBarIcon: getTabBarIcon("person")
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
-  );
-}
+      />
+      <Tab.Screen
+        name="Favorites"
+        component={FavoritesScreens}
+        options={{
+          tabBarIcon: getTabBarIcon("star")
+        }}
+      />
+      <Tab.Screen
+        name="User"
+        component={UserScreens}
+        options={{
+          tabBarIcon: getTabBarIcon("person")
+        }}
+      />
+    </Tab.Navigator>
+  </NavigationContainer>
+);
+
+export default App;

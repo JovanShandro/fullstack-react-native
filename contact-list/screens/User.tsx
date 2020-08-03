@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,55 +12,46 @@ import { fetchUserContact } from "../utils/api";
 import store from "../store";
 import { MappedContact, Subscription } from "../utils/types";
 
-interface State {
-  user?: MappedContact | {};
-  loading?: boolean;
-  error?: boolean;
-}
+const User: React.FC<{}> = () => {
+  const [user, setUser] = useState(store.getState().user);
+  const [loading, setLoading] = useState(store.getState().isFetchingUser);
+  const [error, setError] = useState(store.getState().error);
+  const unsubscribe = useRef<Subscription | null>(null);
 
-export default class User extends React.Component<{}, State> {
-  state: State = {
-    user: store.getState().user,
-    loading: store.getState().isFetchingUser,
-    error: store.getState().error
-  };
+  useEffect(() => {
+    handleAsync();
+    return () => {
+      if (unsubscribe.current) {
+        unsubscribe.current();
+      }
+    };
+  }, []);
 
-  unsubscribe: Subscription = () => [];
-
-  async componentDidMount() {
-    this.unsubscribe = store.onChange(() =>
-      this.setState({
-        user: store.getState().user,
-        loading: store.getState().isFetchingUser,
-        error: store.getState().error
-      })
-    );
+  const handleAsync = async () => {
+    unsubscribe.current = store.onChange(() => {
+      setUser(store.getState().user);
+      setLoading(store.getState().isFetchingUser);
+      setError(store.getState().error);
+    });
 
     const user = await fetchUserContact();
 
     store.setState({ user, isFetchingUser: false });
-  }
+  };
 
-  componentWillUnmount() {
-    this.unsubscribe();
-  }
+  const { avatar, name, phone } = user as MappedContact;
 
-  render() {
-    const { user, loading, error } = this.state;
-    const { avatar, name, phone } = user as MappedContact;
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text>Error...</Text>}
 
-    return (
-      <View style={styles.container}>
-        {loading && <ActivityIndicator size="large" />}
-        {error && <Text>Error...</Text>}
-
-        {!loading && (
-          <ContactThumbnail avatar={avatar} name={name} phone={phone} />
-        )}
-      </View>
-    );
-  }
-}
+      {!loading && (
+        <ContactThumbnail avatar={avatar} name={name} phone={phone} />
+      )}
+    </View>
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -74,3 +65,5 @@ const styles = StyleSheet.create<Style>({
     backgroundColor: colors.blue
   }
 });
+
+export default User;

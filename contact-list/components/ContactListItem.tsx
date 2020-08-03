@@ -18,34 +18,27 @@ interface Props {
   onPress(): void;
 }
 
-export default function ContactListItem({
-  name,
-  avatar,
-  phone,
-  onPress
-}: Props) {
-  return (
-    <TouchableHighlight
-      underlayColor={colors.grey}
-      style={styles.container}
-      onPress={onPress}
-    >
-      <View style={styles.contactInfo}>
-        <Image
-          style={styles.avatar}
-          source={{
-            uri: avatar
-          }}
-        />
+const ContactListItem: React.FC<Props> = ({ name, avatar, phone, onPress }) => (
+  <TouchableHighlight
+    underlayColor={colors.grey}
+    style={styles.container}
+    onPress={onPress}
+  >
+    <View style={styles.contactInfo}>
+      <Image
+        style={styles.avatar}
+        source={{
+          uri: avatar
+        }}
+      />
 
-        <View style={styles.details}>
-          <Text style={[styles.title]}>{name}</Text>
-          <Text style={styles.subtitle}>{phone}</Text>
-        </View>
+      <View style={styles.details}>
+        <Text style={[styles.title]}>{name}</Text>
+        <Text style={styles.subtitle}>{phone}</Text>
       </View>
-    </TouchableHighlight>
-  );
-}
+    </View>
+  </TouchableHighlight>
+);
 
 interface Style {
   container: ViewStyle;
@@ -91,3 +84,5 @@ const styles = StyleSheet.create<Style>({
     marginTop: 4
   }
 });
+
+export default ContactListItem;

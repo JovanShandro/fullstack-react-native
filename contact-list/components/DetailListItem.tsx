@@ -9,31 +9,29 @@ interface Props {
   subtitle?: string;
 }
 
-export default function DetailListItem({ icon, title, subtitle }: Props) {
-  return (
-    <View style={styles.borderContainer}>
-      <View style={styles.wrapper}>
-        <View style={styles.container}>
-          {icon && (
-            <MaterialIcons
-              name={icon}
-              size={24}
-              style={{
-                color: colors.black,
-                marginRight: 20
-              }}
-            />
-          )}
-          <View style={styles.contentContainer}>
-            <Text style={[styles.title]}>{title}</Text>
+const DetailListItem: React.FC<Props> = ({ icon, title, subtitle }: Props) => (
+  <View style={styles.borderContainer}>
+    <View style={styles.wrapper}>
+      <View style={styles.container}>
+        {icon && (
+          <MaterialIcons
+            name={icon}
+            size={24}
+            style={{
+              color: colors.black,
+              marginRight: 20
+            }}
+          />
+        )}
+        <View style={styles.contentContainer}>
+          <Text style={[styles.title]}>{title}</Text>
 
-            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-          </View>
+          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
       </View>
     </View>
-  );
-}
+  </View>
+);
 
 interface Style {
   container: ViewStyle;
@@ -76,3 +74,5 @@ const styles = StyleSheet.create<Style>({
     marginTop: 4
   }
 });
+
+export default DetailListItem;

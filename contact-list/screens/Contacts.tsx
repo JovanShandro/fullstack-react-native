@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,12 +14,6 @@ import getURLParams from "../utils/getURLParams";
 import store from "../store";
 import { MappedContact, Subscription } from "../utils/types";
 
-interface State {
-  contacts: MappedContact[];
-  loading: boolean;
-  error?: boolean;
-}
-
 interface Props {
   navigation: {
     navigate(path: string, params: {}): void;
@@ -28,43 +22,40 @@ interface Props {
 
 const keyExtractor = ({ phone }: { phone: string }) => phone;
 
-export default class Contacts extends React.Component<Props, State> {
-  state: State = {
-    contacts: store.getState().contacts,
-    loading: store.getState().isFetchingContacts,
-    error: store.getState().error
-  };
+const Contacts: React.FC<Props> = ({ navigation: { navigate } }) => {
+  const [contacts, setContacts] = useState(store.getState().contacts);
+  const [loading, setLoading] = useState(store.getState().isFetchingContacts);
+  const [error, setError] = useState(store.getState().error);
+  const unsubscribe = useRef<Subscription | null>(null);
 
-  unsubscribe: Subscription = () => [];
-
-  async componentDidMount() {
-    this.unsubscribe = store.onChange(() =>
-      this.setState({
-        contacts: store.getState().contacts,
-        loading: store.getState().isFetchingContacts,
-        error: store.getState().error
-      })
-    );
+  const handleAsync = async () => {
+    unsubscribe.current = store.onChange(() => {
+      setContacts(store.getState().contacts);
+      setLoading(store.getState().isFetchingContacts);
+      setError(store.getState().error);
+    });
 
     const contacts = await fetchContacts();
 
     store.setState({ contacts, isFetchingContacts: false });
 
-    Linking.addEventListener("url", this.handleOpenUrl);
+    Linking.addEventListener("url", handleOpenUrl);
 
     const url = (await Linking.getInitialURL()) as string;
-    this.handleOpenUrl({ url });
-  }
+    handleOpenUrl({ url });
+  };
 
-  componentWillUnmount() {
-    Linking.removeEventListener("url", this.handleOpenUrl);
-    this.unsubscribe();
-  }
+  useEffect(() => {
+    handleAsync();
+    return () => {
+      Linking.removeEventListener("url", handleOpenUrl);
+      if (unsubscribe.current) {
+        unsubscribe.current();
+      }
+    };
+  }, []);
 
-  handleOpenUrl(event: { url: string }) {
-    const {
-      navigation: { navigate }
-    } = this.props;
+  const handleOpenUrl = (event: { url: string }) => {
     const { url } = event;
     const params = getURLParams(url);
 
@@ -81,12 +72,9 @@ export default class Contacts extends React.Component<Props, State> {
         navigate("Profile", { id: queriedContact.id });
       }
     }
-  }
+  };
 
-  renderContact = ({ item }: { item: MappedContact }) => {
-    const {
-      navigation: { navigate }
-    } = this.props;
+  const renderContact = ({ item }: { item: MappedContact }) => {
     const { id, name, avatar, phone } = item;
 
     return (
@@ -99,28 +87,22 @@ export default class Contacts extends React.Component<Props, State> {
     );
   };
 
-  render() {
-    const { contacts, loading, error } = this.state;
+  const contactsSorted = contacts.sort((a, b) => a.name.localeCompare(b.name));
 
-    const contactsSorted = contacts.sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-
-    return (
-      <View style={styles.container}>
-        {loading && <ActivityIndicator size="large" />}
-        {error && <Text>Error...</Text>}
-        {!loading && !error && (
-          <FlatList
-            data={contactsSorted}
-            keyExtractor={keyExtractor}
-            renderItem={this.renderContact}
-          />
-        )}
-      </View>
-    );
-  }
-}
+  return (
+    <View style={styles.container}>
+      {loading && <ActivityIndicator size="large" />}
+      {error && <Text>Error...</Text>}
+      {!loading && !error && (
+        <FlatList
+          data={contactsSorted}
+          keyExtractor={keyExtractor}
+          renderItem={renderContact}
+        />
+      )}
+    </View>
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -133,3 +115,5 @@ const styles = StyleSheet.create<Style>({
     flex: 1
   }
 });
+
+export default Contacts;
