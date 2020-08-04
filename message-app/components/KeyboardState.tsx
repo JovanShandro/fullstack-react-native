@@ -3,123 +3,110 @@ import {
   KeyboardEvent,
   Platform,
   KeyboardEventListener,
-  EmitterSubscription
+  EmitterSubscription,
 } from "react-native";
-import React, { ReactNode } from "react";
+import { useState, useRef, useEffect, ReactElement } from "react";
 import { Layout } from "../utils/types";
+import { useComponentWillMount } from "../utils/useComponentWillMount";
 
 const INITIAL_ANIMATION_DURATION = 250;
 
 interface Props {
   layout: Layout;
-  children(props: State & { containerHeight: number }): ReactNode;
+  children(props: {
+    containerHeight: number;
+    contentHeight: number;
+    keyboardHeight: number;
+    keyboardVisible: boolean;
+    keyboardWillShow: boolean;
+    keyboardWillHide: boolean;
+    keyboardAnimationDuration: number;
+  }): ReactElement;
 }
 
-interface State {
-  contentHeight: number;
-  keyboardHeight: number;
-  keyboardVisible: boolean;
-  keyboardWillShow: boolean;
-  keyboardWillHide: boolean;
-  keyboardAnimationDuration: number;
-}
+const KeyboardState = ({ layout, children }: Props) => {
+  const [contentHeight, setContentHeight] = useState(layout.height);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardWillShow, setKeyboardWillShow] = useState(false);
+  const [keyboardWillHide, setKeyboardWillHide] = useState(false);
+  const [keyboardAnimationDuration, setKeyboardAnimationDuration] = useState(
+    INITIAL_ANIMATION_DURATION
+  );
+  const subscriptions = useRef<EmitterSubscription[]>([]);
 
-export default class KeyboardState extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
+  const keyboardWillShowHandler: KeyboardEventListener = (
+    event: KeyboardEvent
+  ) => {
     const {
-      layout: { height }
-    } = props;
+      endCoordinates: { height, screenY },
+    } = event;
+    setKeyboardWillShow(true);
+    measure(height, screenY);
+  };
 
-    this.state = {
-      contentHeight: height,
-      keyboardHeight: 0,
-      keyboardVisible: false,
-      keyboardWillShow: false,
-      keyboardWillHide: false,
-      keyboardAnimationDuration: INITIAL_ANIMATION_DURATION
-    };
-  }
+  const keyboardDidShowHandler: KeyboardEventListener = (
+    event: KeyboardEvent
+  ) => {
+    const {
+      endCoordinates: { height, screenY },
+    } = event;
+    setKeyboardWillShow(false);
+    setKeyboardVisible(true);
+    measure(height, screenY);
+  };
 
-  subscriptions: EmitterSubscription[] = [];
+  const keyboardWillHideHandler: KeyboardEventListener = (
+    event: KeyboardEvent
+  ) => {
+    const {
+      endCoordinates: { height, screenY },
+    } = event;
+    setKeyboardWillHide(true);
+    measure(height, screenY);
+  };
 
-  UNSAFE_componentWillMount() {
+  const keyboardDidHideHandler: KeyboardEventListener = () => {
+    setKeyboardWillHide(false);
+    setKeyboardVisible(false);
+  };
+
+  useComponentWillMount(() => {
     if (Platform.OS === "ios") {
-      this.subscriptions = [
-        Keyboard.addListener("keyboardWillShow", this.keyboardWillShow),
-        Keyboard.addListener("keyboardWillHide", this.keyboardWillHide),
-        Keyboard.addListener("keyboardDidShow", this.keyboardDidShow),
-        Keyboard.addListener("keyboardDidHide", this.keyboardDidHide)
+      subscriptions.current = [
+        Keyboard.addListener("keyboardWillShow", keyboardWillShowHandler),
+        Keyboard.addListener("keyboardWillHide", keyboardWillHideHandler),
+        Keyboard.addListener("keyboardDidShow", keyboardDidShowHandler),
+        Keyboard.addListener("keyboardDidHide", keyboardDidHideHandler),
       ];
     } else {
-      this.subscriptions = [
-        Keyboard.addListener("keyboardDidHide", this.keyboardDidHide),
-        Keyboard.addListener("keyboardDidShow", this.keyboardDidShow)
+      subscriptions.current = [
+        Keyboard.addListener("keyboardDidHide", keyboardDidHideHandler),
+        Keyboard.addListener("keyboardDidShow", keyboardDidShowHandler),
       ];
     }
-  }
+  });
 
-  componentWillUnmount() {
-    this.subscriptions.forEach(subscription => subscription.remove());
-  }
+  useEffect(() => {
+    return () => {
+      subscriptions.current.forEach((subscription) => subscription.remove());
+    };
+  }, []);
 
-  keyboardWillShow: KeyboardEventListener = (event: KeyboardEvent) => {
-    this.setState({ keyboardWillShow: true });
-    this.measure(event);
-  };
-  keyboardDidShow: KeyboardEventListener = (event: KeyboardEvent) => {
-    this.setState({
-      keyboardWillShow: false,
-      keyboardVisible: true
-    });
-    this.measure(event);
+  const measure = (height: number, screenY: number) => {
+    setContentHeight(screenY - layout.y);
+    setKeyboardHeight(height);
   };
 
-  keyboardWillHide: KeyboardEventListener = (event: KeyboardEvent) => {
-    this.setState({ keyboardWillHide: true });
-    this.measure(event);
-  };
+  return children({
+    containerHeight: layout.height,
+    contentHeight,
+    keyboardHeight,
+    keyboardVisible,
+    keyboardWillShow,
+    keyboardWillHide,
+    keyboardAnimationDuration,
+  });
+};
 
-  keyboardDidHide: KeyboardEventListener = () => {
-    this.setState({
-      keyboardWillHide: false,
-      keyboardVisible: false
-    });
-  };
-
-  measure = (event: any) => {
-    const { layout } = this.props;
-
-    const {
-      endCoordinates: { height, screenY }
-    } = event;
-
-    this.setState({
-      contentHeight: screenY - layout.y,
-      keyboardHeight: height
-    });
-  };
-
-  render() {
-    const { children, layout } = this.props;
-    const {
-      contentHeight,
-      keyboardHeight,
-      keyboardVisible,
-      keyboardWillShow,
-      keyboardWillHide,
-      keyboardAnimationDuration
-    } = this.state;
-
-    return children({
-      containerHeight: layout.height,
-      contentHeight,
-      keyboardHeight,
-      keyboardVisible,
-      keyboardWillShow,
-      keyboardWillHide,
-      keyboardAnimationDuration
-    });
-  }
-}
+export default KeyboardState;

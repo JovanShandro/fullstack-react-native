@@ -1,10 +1,11 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useRef, useEffect } from "react";
 import {
   BackHandler,
   LayoutAnimation,
   Platform,
   UIManager,
-  View
+  View,
+  NativeEventSubscription
 } from "react-native";
 import { isIphoneX } from "react-native-iphone-x-helper";
 import { INPUT_METHOD } from "../utils/types";
@@ -30,15 +31,17 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export default class MessagingContainer extends React.Component<Props> {
-  subscription: any = null;
+const MessagingContainer: React.FC<Props> = props => {
+  const subscription = useRef<NativeEventSubscription | null>(null);
+  const prevProps = useRef<Props>(props);
 
-  componentDidMount() {
-    this.subscription = BackHandler.addEventListener(
+  useEffect(() => {
+    subscription.current = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        const { onChangeInputMethod, inputMethod } = this.props;
+        const { onChangeInputMethod, inputMethod } = props;
 
+        console.log("!"); // For some reason the handler doesn't work if I delete this line
         if (inputMethod === INPUT_METHOD.CUSTOM) {
           onChangeInputMethod(INPUT_METHOD.NONE);
           return true;
@@ -47,28 +50,30 @@ export default class MessagingContainer extends React.Component<Props> {
         return false;
       }
     );
-  }
 
-  componentWillUnmount() {
-    this.subscription.remove();
-  }
+    return () => {
+      if (subscription.current) {
+        subscription.current.remove();
+      }
+    };
+  }, []);
 
-  UNSAFE_componentWillReceiveProps(nextProps: Props) {
-    const { onChangeInputMethod } = this.props;
+  useEffect(() => {
+    const { onChangeInputMethod } = prevProps.current;
 
-    if (!this.props.keyboardVisible && nextProps.keyboardVisible) {
+    if (!prevProps.current.keyboardVisible && props.keyboardVisible) {
       // Keyboard shown
       onChangeInputMethod(INPUT_METHOD.KEYBOARD);
     } else if (
       // Keyboard hidden
-      this.props.keyboardVisible &&
-      !nextProps.keyboardVisible &&
-      this.props.inputMethod !== INPUT_METHOD.CUSTOM
+      prevProps.current.keyboardVisible &&
+      !props.keyboardVisible &&
+      prevProps.current.inputMethod !== INPUT_METHOD.CUSTOM
     ) {
       onChangeInputMethod(INPUT_METHOD.NONE);
     }
 
-    const { keyboardAnimationDuration } = nextProps;
+    const { keyboardAnimationDuration } = props;
 
     // Animate between states
     const animation = LayoutAnimation.create(
@@ -79,46 +84,48 @@ export default class MessagingContainer extends React.Component<Props> {
       LayoutAnimation.Properties.opacity
     );
     LayoutAnimation.configureNext(animation);
-  }
 
-  render() {
-    const {
-      children,
-      renderInputMethodEditor,
-      inputMethod,
-      containerHeight,
-      contentHeight,
-      keyboardHeight,
-      keyboardWillShow,
-      keyboardWillHide
-    } = this.props;
+    prevProps.current = props;
+  }, [props]);
 
-    const useContentHeight =
-      keyboardWillShow || inputMethod === INPUT_METHOD.KEYBOARD;
+  const {
+    children,
+    renderInputMethodEditor,
+    inputMethod,
+    containerHeight,
+    contentHeight,
+    keyboardHeight,
+    keyboardWillShow,
+    keyboardWillHide
+  } = props;
 
-    const containerStyle = {
-      height: useContentHeight ? contentHeight : containerHeight
-    };
+  const useContentHeight =
+    keyboardWillShow || inputMethod === INPUT_METHOD.KEYBOARD;
 
-    const showCustomInput =
-      inputMethod === INPUT_METHOD.CUSTOM && !keyboardWillShow;
+  const containerStyle = {
+    height: useContentHeight ? contentHeight : containerHeight
+  };
 
-    const keyboardIsHidden =
-      inputMethod === INPUT_METHOD.NONE && !keyboardWillShow;
+  const showCustomInput =
+    inputMethod === INPUT_METHOD.CUSTOM && !keyboardWillShow;
 
-    const keyboardIsHiding =
-      inputMethod === INPUT_METHOD.KEYBOARD && keyboardWillHide;
+  const keyboardIsHidden =
+    inputMethod === INPUT_METHOD.NONE && !keyboardWillShow;
 
-    const inputStyle = {
-      height: showCustomInput ? keyboardHeight || 250 : 0,
-      marginTop: isIphoneX() && (keyboardIsHidden || keyboardIsHiding) ? 24 : 0
-    };
+  const keyboardIsHiding =
+    inputMethod === INPUT_METHOD.KEYBOARD && keyboardWillHide;
 
-    return (
-      <View style={containerStyle}>
-        {children}
-        <View style={inputStyle}>{renderInputMethodEditor()}</View>
-      </View>
-    );
-  }
-}
+  const inputStyle = {
+    height: showCustomInput ? keyboardHeight || 250 : 0,
+    marginTop: isIphoneX() && (keyboardIsHidden || keyboardIsHiding) ? 24 : 0
+  };
+
+  return (
+    <View style={containerStyle}>
+      {children}
+      <View style={inputStyle}>{renderInputMethodEditor()}</View>
+    </View>
+  );
+};
+
+export default MessagingContainer;

@@ -1,4 +1,4 @@
-import React, { RefObject } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -28,79 +28,69 @@ interface Props {
   onPressLocation(): void;
 }
 
-interface State {
-  text: string;
-}
+const Toolbar: React.FC<Props> = ({
+  onChangeFocus,
+  onPressCamera,
+  onPressLocation,
+  onSubmit,
+  isFocused
+}) => {
+  const [text, setText] = useState("");
+  const prevIsFocused = useRef(isFocused);
+  const input = useRef<TextInput | null>(null);
 
-export default class Toolbar extends React.Component<Props, State> {
-  state: State = {
-    text: ""
-  };
-
-  input: RefObject<TextInput> = React.createRef<TextInput>();
-
-  UNSAFE_componentWillReceiveProps(nextProps: Props) {
-    if (nextProps.isFocused !== this.props.isFocused) {
-      if (nextProps.isFocused) {
-        this.input.current!.focus();
+  useEffect(() => {
+    if (isFocused !== prevIsFocused.current) {
+      if (isFocused) {
+        input.current?.focus();
       } else {
-        this.input.current!.blur();
+        input.current?.blur();
       }
     }
-  }
 
-  handleFocus = () => {
-    const { onChangeFocus } = this.props;
+    prevIsFocused.current = isFocused;
+  }, [isFocused]);
 
+  const handleFocus = () => {
     onChangeFocus(true);
   };
 
-  handleBlur = () => {
-    const { onChangeFocus } = this.props;
-
+  const handleBlur = () => {
     onChangeFocus(false);
   };
 
-  handleChangeText = (text: string) => {
-    this.setState({ text });
+  const handleChangeText = (text: string) => {
+    setText(text);
   };
 
-  handleSubmitEditing = () => {
-    const { onSubmit } = this.props;
-    const { text } = this.state;
-
+  const handleSubmitEditing = () => {
     if (!text) return; // Don't submit if empty
 
     onSubmit(text);
-    this.setState({ text: "" });
+    setText(text);
   };
 
-  render() {
-    const { onPressCamera, onPressLocation } = this.props;
-    const { text } = this.state;
-
-    return (
-      <View style={styles.toolbar}>
-        <ToolbarButton title={"📷"} onPress={onPressCamera} />
-        <ToolbarButton title={"📍"} onPress={onPressLocation} />
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            underlineColorAndroid={"transparent"}
-            placeholder={"Type something!"}
-            blurOnSubmit={false}
-            value={text}
-            onChangeText={this.handleChangeText}
-            onSubmitEditing={this.handleSubmitEditing}
-            ref={this.input}
-            onFocus={this.handleFocus}
-            onBlur={this.handleBlur}
-          />
-        </View>
+  return (
+    <View style={styles.toolbar}>
+      <ToolbarButton title={"📷"} onPress={onPressCamera} />
+      <ToolbarButton title={"📍"} onPress={onPressLocation} />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          underlineColorAndroid={"transparent"}
+          placeholder={"Type something!"}
+          blurOnSubmit={false}
+          value={text}
+          onChangeText={handleChangeText}
+          onSubmitEditing={handleSubmitEditing}
+          ref={input}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
       </View>
-    );
-  }
-}
+    </View>
+  );
+};
 
 interface Style {
   toolbar: ViewStyle;
@@ -140,3 +130,5 @@ const styles = StyleSheet.create<Style>({
     color: "grey"
   }
 });
+
+export default Toolbar;

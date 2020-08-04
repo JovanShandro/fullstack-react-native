@@ -13,22 +13,15 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import { MessageShape } from "../utils/types";
 
-type DefaultProps = {
+type Props = {
+  messages: MessageShape[];
   onPressMessage(item: MessageShape): void;
 };
 
-type Props = {
-  messages: MessageShape[];
-} & DefaultProps;
-
 const keyExtractor = (item: { id: number }) => item.id.toString();
 
-export default class MessageList extends React.Component<Props, {}> {
-  static defaultProps: DefaultProps = {
-    onPressMessage: () => {}
-  };
-
-  renderMessageBody = ({ type, text, uri, coordinate }: MessageShape) => {
+const MessageList: React.FC<Props> = ({ messages, onPressMessage }) => {
+  const renderMessageBody = ({ type, text, uri, coordinate }: MessageShape) => {
     switch (type) {
       case "text":
         return (
@@ -56,33 +49,27 @@ export default class MessageList extends React.Component<Props, {}> {
     }
   };
 
-  renderMessageItem = ({ item }: { item: MessageShape }) => {
-    const { onPressMessage } = this.props;
-
+  const renderMessageItem = ({ item }: { item: MessageShape }) => {
     return (
       <View key={item.id} style={styles.messageRow}>
         <TouchableOpacity onPress={() => onPressMessage(item)}>
-          {this.renderMessageBody(item)}
+          {renderMessageBody(item)}
         </TouchableOpacity>
       </View>
     );
   };
 
-  render() {
-    const { messages } = this.props;
-
-    return (
-      <FlatList
-        style={styles.container}
-        inverted
-        data={messages}
-        renderItem={this.renderMessageItem}
-        keyExtractor={keyExtractor}
-        keyboardShouldPersistTaps={"handled"}
-      />
-    );
-  }
-}
+  return (
+    <FlatList
+      style={styles.container}
+      inverted
+      data={messages}
+      renderItem={renderMessageItem}
+      keyExtractor={keyExtractor}
+      keyboardShouldPersistTaps={"handled"}
+    />
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -126,3 +113,5 @@ const styles = StyleSheet.create<Style>({
     borderRadius: 10
   }
 });
+
+export default MessageList;

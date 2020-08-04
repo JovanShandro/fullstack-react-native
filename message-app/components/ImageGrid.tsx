@@ -1,40 +1,33 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Image, StyleSheet, TouchableOpacity, ImageStyle } from "react-native";
 import * as MediaLibrary from "expo-media-library";
 import Grid from "./Grid";
 import { GridRenderItem, ImageType } from "../utils/types";
 
-const uri = require("../assets/favicon.png");
-
 interface Props {
   onPressImage(uri: string): void;
 }
 
-interface State {
-  images: ImageType[];
-}
-
 const keyExtractor = ({ uri }: { uri: string }) => uri;
 
-export default class ImageGrid extends React.Component<Props, State> {
-  static defaultProps: Props = {
-    onPressImage: () => {}
-  };
+const ImageGrid: React.FC<Props> = ({ onPressImage }) => {
+  const [images, setImages] = useState<ImageType[]>([]);
+  const loading = useRef(false);
+  const cursor = useRef<any>(null);
+  const hasNextPage = useRef(false);
+  const endCursor = useRef<any>(null);
 
-  // eslint-disable-next-line react/sort-comp
-  loading = false;
-  cursor: any = null;
+  useEffect(() => {
+    getImages(cursor.current);
+  }, []);
 
-  state: State = {
-    images: []
-  };
+  useEffect(() => {
+    loading.current = false;
+    cursor.current = (hasNextPage.current ? endCursor.current : "") as string;
+  }, [images]);
 
-  UNSAFE_componentDidMount() {
-    this.getImages(this.cursor);
-  }
-
-  getImages = async (after: any) => {
-    if (this.loading) return;
+  const getImages = async (after: any) => {
+    if (loading.current) return;
 
     const { status } = await MediaLibrary.requestPermissionsAsync();
 
@@ -43,9 +36,7 @@ export default class ImageGrid extends React.Component<Props, State> {
       return;
     }
 
-    console.log(status);
-
-    this.loading = true;
+    loading.current = true;
 
     let results: any;
 
@@ -60,34 +51,26 @@ export default class ImageGrid extends React.Component<Props, State> {
       return;
     }
 
-    const { assets, endCursor, hasNextPage } = results;
+    const { assets } = results;
+    endCursor.current = results.endCursor;
+    hasNextPage.current = results.hasNextPage;
 
-    this.setState(
-      {
-        images: this.state.images.concat(assets)
-      },
-      () => {
-        this.loading = false;
-        this.cursor = (hasNextPage ? endCursor : "") as string;
-      }
-    );
+    setImages(images => images.concat(assets));
   };
 
-  getNextImages = () => {
+  const getNextImages = () => {
     // Prevent loading the initial page after we've reached the end
-    if (!this.cursor) return;
+    if (!cursor.current) return;
 
-    this.getImages(this.cursor);
+    getImages(cursor.current);
   };
 
-  renderItem = ({
+  const renderItem = ({
     item: { uri },
     size,
     marginTop,
     marginLeft
   }: GridRenderItem) => {
-    const { onPressImage } = this.props;
-
     const style = {
       width: size,
       height: size,
@@ -107,19 +90,15 @@ export default class ImageGrid extends React.Component<Props, State> {
     );
   };
 
-  render() {
-    const { images } = this.state;
-
-    return (
-      <Grid
-        data={images}
-        renderItem={this.renderItem}
-        keyExtractor={keyExtractor}
-        onEndReached={this.getNextImages}
-      />
-    );
-  }
-}
+  return (
+    <Grid
+      data={images}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      onEndReached={getNextImages}
+    />
+  );
+};
 
 interface Style {
   image: ImageStyle;
@@ -130,3 +109,5 @@ const styles = StyleSheet.create<Style>({
     flex: 1
   }
 });
+
+export default ImageGrid;

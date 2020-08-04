@@ -4,7 +4,6 @@ import {
   ListRenderItem,
   FlatList,
   PixelRatio,
-  StyleSheet,
   ListRenderItemInfo
 } from "react-native";
 import { GridRenderItem, ImageType } from "../utils/types";
@@ -14,24 +13,16 @@ type Props = {
   data: ImageType[];
   keyExtractor(item: { uri: string }): string;
   onEndReached(): void;
-} & DefaultProps;
-
-type DefaultProps = {
   numColumns?: number;
   itemMargin?: number;
 };
 
-export default class Grid extends React.Component<Props, {}> {
-  static defaultProps: DefaultProps = {
-    numColumns: 4,
-    itemMargin: StyleSheet.hairlineWidth
-  };
-
-  renderGridItem: ListRenderItem<ImageType> = (
+const Grid: React.FC<Props> = props => {
+  const renderGridItem: ListRenderItem<ImageType> = (
     info: ListRenderItemInfo<ImageType>
   ): React.ReactElement<any> => {
     const { index } = info;
-    const { renderItem, numColumns, itemMargin } = this.props;
+    const { renderItem, numColumns = 4, itemMargin } = props;
 
     // We want to get the device width on render, in case the device is rotated
     const { width } = Dimensions.get("window");
@@ -50,12 +41,12 @@ export default class Grid extends React.Component<Props, {}> {
     return renderItem({ ...info, size, marginLeft, marginTop });
   };
 
-  render() {
-    return (
-      <FlatList
-        {...this.props}
-        renderItem={this.renderGridItem as ListRenderItem<ImageType>}
-      />
-    );
-  }
-}
+  return (
+    <FlatList
+      {...props}
+      renderItem={renderGridItem as ListRenderItem<ImageType>}
+    />
+  );
+};
+
+export default Grid;

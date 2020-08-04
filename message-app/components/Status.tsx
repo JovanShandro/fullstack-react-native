@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Constants from "expo-constants";
-import NetInfo from "@react-native-community/netinfo";
+import NetInfo, { NetInfoSubscription } from "@react-native-community/netinfo";
 import {
   Platform,
   StatusBar,
@@ -10,74 +10,65 @@ import {
   ViewStyle,
   TextStyle
 } from "react-native";
+import { useComponentWillMount } from "../utils/useComponentWillMount";
 
-interface State {
-  connectionType: string | null;
-}
+const Status = () => {
+  const [connectionType, setConnectionType] = useState<string | null>(null);
+  const unsubscribe = useRef<NetInfoSubscription | null>(null);
 
-export default class Status extends React.Component<{}, State> {
-  state: State = {
-    connectionType: null
-  };
-
-  unsubscribe: any = null;
-
-  async UNSAFE_componentWillMount() {
-    this.unsubscribe = NetInfo.addEventListener(this.handleChange);
+  useComponentWillMount(async () => {
+    unsubscribe.current = NetInfo.addEventListener(handleChange);
 
     const { type } = await NetInfo.fetch();
-
-    this.setState({ connectionType: type });
+    setConnectionType(type);
 
     // We can use this to test changes in network connectivity
-    setTimeout(() => this.handleChange({ type: "none" }), 3000);
-  }
+    setTimeout(() => handleChange({ type: "none" }), 3000);
+  });
 
-  componentWillUnmount() {
-    this.unsubscribe();
-  }
+  useEffect(() => {
+    if (unsubscribe.current) {
+      unsubscribe.current();
+    }
+  });
 
-  handleChange = ({ type }: { type: string }) => {
-    this.setState({ connectionType: type });
+  const handleChange = ({ type }: { type: string }) => {
+    setConnectionType(type);
   };
 
-  render() {
-    const { connectionType } = this.state;
+  const isConnected = connectionType !== "none";
 
-    const isConnected = connectionType !== "none";
+  const backgroundColor = isConnected ? "white" : "red";
 
-    const backgroundColor = isConnected ? "white" : "red";
+  const statusBar = (
+    <StatusBar
+      backgroundColor={backgroundColor}
+      barStyle={isConnected ? "dark-content" : "light-content"}
+      animated={false}
+    />
+  );
 
-    const statusBar = (
-      <StatusBar
-        backgroundColor={backgroundColor}
-        barStyle={isConnected ? "dark-content" : "light-content"}
-        animated={false}
-      />
-    );
+  const messageContainer = (
+    <View style={styles.messageContainer} pointerEvents={"none"}>
+      {statusBar}
+      {!isConnected && (
+        <View style={styles.bubble}>
+          <Text style={styles.text}>No network connection</Text>
+        </View>
+      )}
+    </View>
+  );
 
-    const messageContainer = (
-      <View style={styles.messageContainer} pointerEvents={"none"}>
-        {statusBar}
-        {!isConnected && (
-          <View style={styles.bubble}>
-            <Text style={styles.text}>No network connection</Text>
-          </View>
-        )}
+  if (Platform.OS === "ios") {
+    return (
+      <View style={[styles.status, { backgroundColor }]}>
+        {messageContainer}
       </View>
     );
-
-    if (Platform.OS === "ios") {
-      return (
-        <View style={[styles.status, { backgroundColor }]}>
-          {messageContainer}
-        </View>
-      );
-    }
-
-    return messageContainer;
   }
-}
+
+  return messageContainer;
+};
 
 const statusHeight = Platform.OS === "ios" ? Constants.statusBarHeight : 0;
 
@@ -112,3 +103,5 @@ const styles = StyleSheet.create<Style>({
     color: "white"
   }
 });
+
+export default Status;
