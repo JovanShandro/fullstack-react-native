@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -32,72 +32,64 @@ interface State {
   image: ImageType | null;
 }
 
-export default class App extends React.Component<{}, State> {
-  state: State = {
-    size: 3,
-    puzzle: null,
-    image: null
+const App = () => {
+  const [size, setSize] = useState(3);
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+  const [image, setImage] = useState<ImageType | null>(null);
+
+  useEffect(() => {
+    preloadNextImage();
+  }, []);
+
+  const preloadNextImage = async () => {
+    const randImage = await getRandomImage();
+
+    Image.prefetch(randImage.uri);
+    setImage(randImage);
   };
 
-  componentDidMount() {
-    this.preloadNextImage();
-  }
-
-  async preloadNextImage() {
-    const image = await getRandomImage();
-
-    Image.prefetch(image.uri);
-
-    this.setState({ image });
-  }
-
-  handleChangeSize = (size: number) => {
-    this.setState({ size });
+  const handleChangeSize = (size: number) => {
+    setSize(size);
   };
 
-  handleStartGame = () => {
-    const { size } = this.state;
-
-    this.setState({ puzzle: createPuzzle(size) });
+  const handleStartGame = () => {
+    setPuzzle(createPuzzle(size));
   };
 
-  handleGameChange = (puzzle: Puzzle) => {
-    this.setState({ puzzle });
+  const handleGameChange = (puzzle: Puzzle) => {
+    setPuzzle(puzzle);
   };
 
-  handleQuit = () => {
-    this.setState({ puzzle: null, image: null });
+  const handleQuit = () => {
+    setPuzzle(null);
+    setImage(null);
 
-    this.preloadNextImage();
+    preloadNextImage();
   };
 
-  render() {
-    const { size, puzzle, image } = this.state;
-
-    return (
-      <LinearGradient style={styles.background} colors={BACKGROUND_COLORS}>
-        <StatusBar barStyle={"light-content"} />
-        <SafeAreaView style={styles.container}>
-          {!puzzle && (
-            <Start
-              size={size}
-              onStartGame={this.handleStartGame}
-              onChangeSize={this.handleChangeSize}
-            />
-          )}
-          {puzzle && (
-            <Game
-              puzzle={puzzle}
-              image={image}
-              onChange={this.handleGameChange}
-              onQuit={this.handleQuit}
-            />
-          )}
-        </SafeAreaView>
-      </LinearGradient>
-    );
-  }
-}
+  return (
+    <LinearGradient style={styles.background} colors={BACKGROUND_COLORS}>
+      <StatusBar barStyle={"light-content"} />
+      <SafeAreaView style={styles.container}>
+        {!puzzle && (
+          <Start
+            size={size}
+            onStartGame={handleStartGame}
+            onChangeSize={handleChangeSize}
+          />
+        )}
+        {puzzle && (
+          <Game
+            puzzle={puzzle}
+            image={image}
+            onChange={handleGameChange}
+            onQuit={handleQuit}
+          />
+        )}
+      </SafeAreaView>
+    </LinearGradient>
+  );
+};
 
 interface Style {
   background: ViewStyle;
@@ -116,3 +108,5 @@ const styles = StyleSheet.create<Style>({
         : 0
   }
 });
+
+export default App;

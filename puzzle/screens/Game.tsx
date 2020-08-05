@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import Preview from "../components/Preview";
 import Stats from "../components/Stats";
 import configureTransition from "../utils/configureTransition";
 import { Puzzle, ImageType } from "../utils/types";
+import { useComponentWillMount } from "../utils/useComponentWillMount";
 
 enum GameScreenState {
   LoadingImage,
@@ -22,84 +23,59 @@ enum GameScreenState {
   WillTransitionOut
 }
 
-type Props = {
+interface Props {
   puzzle: Puzzle;
   onChange(puzzle: Puzzle): void;
   onQuit(): void;
-} & DefaultProps;
-
-type DefaultProps = {
-  image: ImageType | null;
-};
-interface State {
-  transitionState: GameScreenState;
-  moves: number;
-  elapsed: number;
-  previousMove: number | null;
   image: ImageType | null;
 }
 
-export default class Game extends React.Component<Props, State> {
-  static defaultProps: DefaultProps = {
-    image: null
-  };
+const Game: React.FC<Props> = ({
+  image = null,
+  onQuit,
+  puzzle,
+  puzzle: { size },
+  onChange
+}): any => {
+  const [transitionState, setTransitionState] = useState<GameScreenState>(
+    image ? GameScreenState.WillTransitionIn : GameScreenState.LoadingImage
+  );
+  const [moves, setMoves] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [previousMove, setPreviousMove] = useState<number | null>(null);
 
-  constructor(props: Props) {
-    super(props);
+  useComponentWillMount(configureTransition);
 
-    const { image } = props;
-
-    this.state = {
-      transitionState: image
-        ? GameScreenState.WillTransitionIn
-        : GameScreenState.LoadingImage,
-      moves: 0,
-      elapsed: 0,
-      previousMove: null,
-      image: null
-    };
-
-    configureTransition();
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps: Props) {
-    const { image } = nextProps;
-    const { transitionState } = this.state;
-
+  useEffect(() => {
     if (image && transitionState === GameScreenState.LoadingImage) {
       configureTransition(() => {
-        this.setState({ transitionState: GameScreenState.WillTransitionIn });
+        setTransitionState(GameScreenState.WillTransitionIn);
       });
     }
-  }
+  }, [image]);
 
-  intervalId: number = -1;
+  const intervalId = useRef(-1);
 
-  handleBoardTransitionIn = () => {
-    this.intervalId = setInterval(() => {
-      const { elapsed } = this.state;
-
-      this.setState({ elapsed: elapsed + 1 });
+  const handleBoardTransitionIn = () => {
+    intervalId.current = setInterval(() => {
+      setElapsed(elapsed => elapsed + 1);
     }, 1000);
   };
 
-  handleBoardTransitionOut = async () => {
-    const { onQuit } = this.props;
-
+  const handleBoardTransitionOut = async () => {
     await configureTransition(() => {
-      this.setState({ transitionState: GameScreenState.WillTransitionOut });
+      setTransitionState(GameScreenState.WillTransitionOut);
     });
 
     onQuit();
   };
 
-  requestTransitionOut = () => {
-    clearInterval(this.intervalId);
-
-    this.setState({ transitionState: GameScreenState.RequestTransitionOut });
+  const requestTransitionOut = () => {
+    clearInterval(intervalId.current);
+    setTransitionState(GameScreenState.RequestTransitionOut);
   };
 
-  handlePressQuit = () => {
+  const handlePressQuit = () => {
     Alert.alert(
       "Quit",
       "Do you want to quit and lose progress on this puzzle?",
@@ -108,68 +84,57 @@ export default class Game extends React.Component<Props, State> {
         {
           text: "Quit",
           style: "destructive",
-          onPress: this.requestTransitionOut
+          onPress: requestTransitionOut
         }
       ]
     );
   };
 
-  handlePressSquare = (square: number) => {
-    const { puzzle, onChange } = this.props;
-    const { moves } = this.state;
-
+  const handlePressSquare = (square: number) => {
     if (!movableSquares(puzzle).includes(square)) return;
 
     const updated = move(puzzle, square);
 
-    this.setState({ moves: moves + 1, previousMove: square });
+    setMoves(moves => moves + 1);
+    setPreviousMove(square);
 
     onChange(updated);
 
     if (isSolved(updated)) {
-      this.requestTransitionOut();
+      requestTransitionOut();
     }
   };
 
-  render() {
-    const {
-      puzzle,
-      puzzle: { size },
-      image
-    } = this.props;
-    const { transitionState, moves, elapsed, previousMove } = this.state;
-
-    return (
-      transitionState !== GameScreenState.WillTransitionOut && (
-        <View style={styles.container}>
-          {transitionState === GameScreenState.LoadingImage && (
-            <ActivityIndicator size={"large"} color={"rgba(255,255,255,0.5)"} />
-          )}
-          {transitionState !== GameScreenState.LoadingImage && (
-            <View style={styles.centered}>
-              <View style={styles.header}>
-                <Preview image={image} boardSize={size} />
-                <Stats moves={moves} time={elapsed} />
-              </View>
-              <Board
-                puzzle={puzzle}
-                image={image}
-                previousMove={previousMove}
-                teardown={
-                  transitionState === GameScreenState.RequestTransitionOut
-                }
-                onMoveSquare={this.handlePressSquare}
-                onTransitionOut={this.handleBoardTransitionOut}
-                onTransitionIn={this.handleBoardTransitionIn}
-              />
-              <Button title={"Quit"} onPress={this.handlePressQuit} />
+  return (
+    transitionState !== GameScreenState.WillTransitionOut && (
+      <View style={styles.container}>
+        {transitionState === GameScreenState.LoadingImage && (
+          <ActivityIndicator size={"large"} color={"rgba(255,255,255,0.5)"} />
+        )}
+        {transitionState !== GameScreenState.LoadingImage && (
+          <View style={styles.centered}>
+            <View style={styles.header}>
+              <Preview image={image} boardSize={size} />
+              <Stats moves={moves} time={elapsed} />
             </View>
-          )}
-        </View>
-      )
-    );
-  }
-}
+            <Board
+              puzzle={puzzle}
+              image={image}
+              previousMove={previousMove}
+              teardown={
+                transitionState === GameScreenState.RequestTransitionOut
+              }
+              onMoveSquare={handlePressSquare}
+              onTransitionOut={handleBoardTransitionOut}
+              onTransitionIn={handleBoardTransitionIn}
+            />
+            <Button title={"Quit"} onPress={handlePressQuit} />
+          </View>
+        )}
+      </View>
+    )
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -197,3 +162,5 @@ const styles = StyleSheet.create<Style>({
     alignSelf: "stretch"
   }
 });
+
+export default Game;

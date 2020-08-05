@@ -3,9 +3,9 @@ import { Image, StyleSheet, ImageStyle } from "react-native";
 
 const logo = require("../assets/logo.png");
 
-export default function Logo() {
+const Logo = () => {
   return <Image style={styles.image} source={logo} />;
-}
+};
 
 interface Style {
   image: ImageStyle;
@@ -19,3 +19,5 @@ const styles = StyleSheet.create<Style>({
     aspectRatio: 285 / 84
   }
 });
+
+export default Logo;

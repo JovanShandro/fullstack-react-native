@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Animated, StyleSheet, View, ViewStyle } from "react-native";
 
 import Button from "../components/Button";
@@ -21,82 +21,75 @@ interface Props {
   size: number;
 }
 
-interface State {
-  transitionState: StartScreenStates;
-}
+const Start: React.FC<Props> = ({ size, onStartGame, onChangeSize }): any => {
+  const [transitionState, setTransitionState] = useState(
+    StartScreenStates.Launching
+  );
 
-export default class Start extends React.Component<Props, State> {
-  state: State = {
-    transitionState: StartScreenStates.Launching
-  };
+  const [toggleOpacity] = useState(new Animated.Value(0));
+  const [buttonOpacity] = useState(new Animated.Value(0));
 
-  toggleOpacity = new Animated.Value(0);
-  buttonOpacity = new Animated.Value(0);
+  useEffect(() => {
+    handleAsync();
+  }, []);
 
-  async componentDidMount() {
+  const handleAsync = async () => {
     await sleep(500);
 
     await configureTransition(() => {
-      this.setState({ transitionState: StartScreenStates.WillTransitionIn });
+      setTransitionState(StartScreenStates.WillTransitionIn);
     });
 
-    Animated.timing(this.toggleOpacity, {
+    Animated.timing(toggleOpacity, {
       toValue: 1,
       duration: 500,
       delay: 500,
       useNativeDriver: true
     }).start();
 
-    Animated.timing(this.buttonOpacity, {
+    Animated.timing(buttonOpacity, {
       toValue: 1,
       duration: 500,
       delay: 1000,
       useNativeDriver: true
     }).start();
-  }
+  };
 
-  handlePressStart = async () => {
-    const { onStartGame } = this.props;
-
+  const handlePressStart = async () => {
     await configureTransition(() => {
-      this.setState({ transitionState: StartScreenStates.WillTransitionOut });
+      setTransitionState(StartScreenStates.WillTransitionOut);
     });
 
     onStartGame();
   };
 
-  render() {
-    const { size, onChangeSize } = this.props;
-    const { transitionState } = this.state;
+  const toggleStyle = { opacity: toggleOpacity };
+  const buttonStyle = { opacity: buttonOpacity };
 
-    const toggleStyle = { opacity: this.toggleOpacity };
-    const buttonStyle = { opacity: this.buttonOpacity };
-
-    return (
-      transitionState !== StartScreenStates.WillTransitionOut && (
-        <View style={styles.container}>
-          <View style={styles.logo}>
-            <Logo />
-          </View>
-          {transitionState !== StartScreenStates.Launching && (
-            <Animated.View style={toggleStyle}>
-              <Toggle
-                options={BOARD_SIZES}
-                value={size}
-                onChange={onChangeSize}
-              />
-            </Animated.View>
-          )}
-          {transitionState !== StartScreenStates.Launching && (
-            <Animated.View style={buttonStyle}>
-              <Button title={"Start Game"} onPress={this.handlePressStart} />
-            </Animated.View>
-          )}
+  return (
+    transitionState !== StartScreenStates.WillTransitionOut && (
+      <View style={styles.container}>
+        <View style={styles.logo}>
+          <Logo />
         </View>
-      )
-    );
-  }
-}
+        {transitionState !== StartScreenStates.Launching && (
+          <Animated.View style={toggleStyle}>
+            <Toggle
+              options={BOARD_SIZES}
+              value={size}
+              onChange={onChangeSize}
+            />
+          </Animated.View>
+        )}
+        {transitionState !== StartScreenStates.Launching && (
+          <Animated.View style={buttonStyle}>
+            <Button title={"Start Game"} onPress={handlePressStart} />
+          </Animated.View>
+        )}
+      </View>
+    )
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -115,3 +108,5 @@ const styles = StyleSheet.create<Style>({
     paddingHorizontal: 40
   }
 });
+
+export default Start;

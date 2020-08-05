@@ -1,90 +1,50 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   PanResponder,
-  PanResponderInstance,
   GestureResponderHandlers,
   PanResponderGestureState
 } from "react-native";
 import { ItemSize } from "../utils/types";
 
-type Props = {
+interface Props {
   children({
     handlers,
     dragging
   }: {
     handlers: GestureResponderHandlers;
     dragging: boolean;
-  }): React.ReactNode;
-} & DefaultProps;
-
-type DefaultProps = {
+  }): React.ReactElement;
   onTouchStart(): void;
   onTouchMove(offset: ItemSize): void;
   onTouchEnd(offset: ItemSize): void;
   enabled: boolean;
-};
-
-interface State {
-  dragging: boolean;
 }
 
-export default class Draggable extends React.Component<Props, State> {
-  static defaultProps: DefaultProps = {
-    onTouchStart: () => {},
-    onTouchMove: () => {},
-    onTouchEnd: () => {},
-    enabled: true
-  };
-
-  panResponder: PanResponderInstance;
-
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      dragging: false
-    };
-
-    this.panResponder = PanResponder.create({
-      onStartShouldSetPanResponder: this.handleStartShouldSetPanResponder,
-      onPanResponderGrant: this.handlePanResponderGrant,
-      onPanResponderMove: this.handlePanResponderMove,
-      onPanResponderRelease: this.handlePanResponderEnd,
-      onPanResponderTerminate: this.handlePanResponderEnd
-    });
-  }
-
-  render() {
-    const { children } = this.props;
-    const { dragging } = this.state;
-
-    // Update children with the state of the drag
-    return children({
-      handlers: this.panResponder.panHandlers,
-      dragging
-    });
-  }
+const Draggable: React.FC<Props> = ({
+  onTouchStart = () => {},
+  onTouchMove = () => {},
+  onTouchEnd = () => {},
+  enabled = true,
+  children
+}) => {
+  const [dragging, setDragging] = useState(false);
 
   // Should we become active when the user presses down on the square?
-  handleStartShouldSetPanResponder = () => {
-    const { enabled } = this.props;
-
+  const handleStartShouldSetPanResponder = () => {
     return enabled;
   };
 
   // We were granted responder status! Let's update the UI
-  handlePanResponderGrant = () => {
-    const { onTouchStart } = this.props;
-
-    this.setState({ dragging: true });
-
+  const handlePanResponderGrant = () => {
+    setDragging(true);
     onTouchStart();
   };
 
   // Every time the touch moves
-  handlePanResponderMove = (e: any, gestureState: PanResponderGestureState) => {
-    const { onTouchMove } = this.props;
-
+  const handlePanResponderMove = (
+    e: any,
+    gestureState: PanResponderGestureState
+  ) => {
     // Keep track of how far we've moved in total (dx and dy)
     const offset = {
       top: gestureState.dy,
@@ -95,19 +55,37 @@ export default class Draggable extends React.Component<Props, State> {
   };
 
   // When the touch is lifted
-  handlePanResponderEnd = (e: any, gestureState: PanResponderGestureState) => {
-    const { onTouchMove, onTouchEnd } = this.props;
-
+  const handlePanResponderEnd = (
+    e: any,
+    gestureState: PanResponderGestureState
+  ) => {
     const offset = {
       top: gestureState.dy,
       left: gestureState.dx
     };
 
-    this.setState({
-      dragging: false
-    });
+    setDragging(false);
 
     onTouchMove(offset);
     onTouchEnd(offset);
   };
-}
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: handleStartShouldSetPanResponder,
+        onPanResponderGrant: handlePanResponderGrant,
+        onPanResponderMove: handlePanResponderMove,
+        onPanResponderRelease: handlePanResponderEnd,
+        onPanResponderTerminate: handlePanResponderEnd
+      }),
+    []
+  );
+
+  // Update children with the state of the drag
+  return children({
+    handlers: panResponder.panHandlers,
+    dragging
+  });
+};
+
+export default Draggable;

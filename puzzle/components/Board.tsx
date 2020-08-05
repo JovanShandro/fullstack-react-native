@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Animated,
   Image,
@@ -21,6 +21,7 @@ import {
 import Draggable from "./Draggable";
 import clamp from "../utils/clamp";
 import { Puzzle, ItemSize } from "../utils/types";
+import { useComponentWillMount } from "../utils/useComponentWillMount";
 
 enum BoardState {
   WillTransitionIn,
@@ -28,102 +29,106 @@ enum BoardState {
   DidTransitionOut
 }
 
-type Props = {
+interface Props {
   puzzle: Puzzle;
   teardown: boolean;
   onMoveSquare(square: number): void;
   onTransitionIn(): void;
   onTransitionOut(): void;
-} & DefaultProps;
-
-type DefaultProps = {
   image: ImageSourcePropType | null;
   previousMove: number | null;
-};
-
-interface State {
-  transitionState: BoardState;
 }
 
-export default class Board extends React.PureComponent<Props, State> {
-  static defaultProps: DefaultProps = {
-    image: null,
-    previousMove: null
-  };
+const Board: React.FC<Props> = ({
+  puzzle,
+  puzzle: { size, empty, board },
+  teardown,
+  onTransitionOut,
+  onTransitionIn,
+  onMoveSquare,
+  image = null,
+  previousMove = null
+}) => {
+  const [transitionState, setTransitionState] = useState(
+    BoardState.WillTransitionIn
+  );
+  const prevPuzzle = useRef<Puzzle>(puzzle);
+  const prevTeardown = useRef<boolean>(teardown);
 
-  animatedValues: {
-    scale: Animated.Value;
-    top: Animated.Value;
-    left: Animated.Value;
-  }[];
+  const animatedValues = useRef<
+    {
+      scale: Animated.Value;
+      top: Animated.Value;
+      left: Animated.Value;
+    }[]
+  >([]);
 
-  constructor(props: Props) {
-    super(props);
-
-    const {
-      puzzle: { size, board }
-    } = props;
-
-    this.state = { transitionState: BoardState.WillTransitionIn };
-    this.animatedValues = [];
-
+  useComponentWillMount(() => {
     const height = Dimensions.get("window").height;
 
     board.forEach((square, index) => {
       const { top, left } = calculateItemPosition(size, index);
 
-      this.animatedValues[square] = {
+      animatedValues.current[square] = {
         scale: new Animated.Value(1),
         top: new Animated.Value(top + height),
         left: new Animated.Value(left)
       };
     });
-  }
+  });
 
-  async componentDidMount() {
-    await this.animateAllSquares(true);
+  // As a component did mount hook
+  useEffect(() => {
+    const handleDidMountAsync = async () => {
+      await animateAllSquares(true);
 
-    const { onTransitionIn } = this.props;
+      setTransitionState(BoardState.DidTransitionIn);
+      onTransitionIn();
+    };
+    handleDidMountAsync();
+  }, []);
 
-    this.setState({ transitionState: BoardState.DidTransitionIn });
+  // As a should receive props lifecycle hook
+  useEffect(() => {
+    // Check prop changes to update positions
+    const handlePropChangesAsync = async (
+      previousMove: number | null,
+      onTransitionOut: () => void,
+      puzzle: Puzzle,
+      teardown: boolean
+    ) => {
+      const didMovePiece =
+        prevPuzzle.current !== puzzle && previousMove !== null;
+      const shouldTeardown = !prevTeardown.current && teardown;
 
-    onTransitionIn();
-  }
+      if (didMovePiece) {
+        await updateSquarePosition(
+          previousMove as number,
+          getIndex(puzzle, previousMove as number)
+        );
+      }
 
-  async UNSAFE_componentWillReceiveProps(nextProps: Props) {
-    const { previousMove, onTransitionOut, puzzle, teardown } = nextProps;
+      if (shouldTeardown) {
+        await animateAllSquares(false);
 
-    const didMovePiece = this.props.puzzle !== puzzle && previousMove !== null;
-    const shouldTeardown = !this.props.teardown && teardown;
+        setTransitionState(BoardState.DidTransitionOut);
 
-    if (didMovePiece) {
-      await this.updateSquarePosition(
-        puzzle,
-        previousMove as number,
-        getIndex(puzzle, previousMove as number)
-      );
-    }
+        onTransitionOut();
+      }
+      prevTeardown.current = teardown;
+      prevPuzzle.current = puzzle;
+    };
+    handlePropChangesAsync(previousMove, onTransitionOut, puzzle, teardown);
+  }, [previousMove, onTransitionOut, puzzle, teardown]);
 
-    if (shouldTeardown) {
-      await this.animateAllSquares(false);
-
-      this.setState({ transitionState: BoardState.DidTransitionOut });
-
-      onTransitionOut();
-    }
-  }
-
-  animateAllSquares(visible: boolean) {
-    const {
-      puzzle: { board, size }
-    } = this.props;
-
+  // Animate all squares when entering of leaving the board
+  const animateAllSquares = (visible: boolean) => {
     const height = Dimensions.get("window").height;
 
     const animations = board.map((square, index) => {
       const { top } = calculateItemPosition(size, index);
 
-      return Animated.timing(this.animatedValues[square].top, {
+      return Animated.timing(animatedValues.current[square].top, {
         toValue: visible ? top : top + height,
         delay: 800 * (index / board.length),
         duration: 400,
@@ -133,21 +138,20 @@ export default class Board extends React.PureComponent<Props, State> {
     });
 
     return new Promise(resolve => Animated.parallel(animations).start(resolve));
-  }
+  };
 
-  updateSquarePosition(puzzle: Puzzle, square: number, index: number) {
-    const { size } = puzzle;
-
+  // Move the square
+  const updateSquarePosition = (square: number, index: number) => {
     const { top, left } = calculateItemPosition(size, index);
 
     const animations = [
-      Animated.spring(this.animatedValues[square].top, {
+      Animated.spring(animatedValues.current[square].top, {
         toValue: top,
         friction: 20,
         tension: 200,
         useNativeDriver: true
       }),
-      Animated.spring(this.animatedValues[square].left, {
+      Animated.spring(animatedValues.current[square].left, {
         toValue: left,
         friction: 20,
         tension: 200,
@@ -156,23 +160,24 @@ export default class Board extends React.PureComponent<Props, State> {
     ];
 
     return new Promise(resolve => Animated.parallel(animations).start(resolve));
-  }
+  };
 
-  handleTouchStart(square: number) {
-    Animated.spring(this.animatedValues[square].scale, {
+  // Hanlde start of touch
+  const handleTouchStart = (square: number) => {
+    Animated.spring(animatedValues.current[square].scale, {
       toValue: 1.1,
       friction: 20,
       tension: 200,
       useNativeDriver: true
     }).start();
-  }
+  };
 
-  handleTouchMove(square: number, index: number, { top, left }: ItemSize) {
-    const {
-      puzzle,
-      puzzle: { size }
-    } = this.props;
-
+  // Handle moving finger on screen
+  const handleTouchMove = (
+    square: number,
+    index: number,
+    { top, left }: ItemSize
+  ) => {
     const itemSize = calculateItemSize(size);
     const move = availableMove(puzzle, square);
 
@@ -195,21 +200,20 @@ export default class Board extends React.PureComponent<Props, State> {
       move === "right" ? distance : 0
     );
 
-    this.animatedValues[square].left.setValue(initialLeft + clampedLeft);
-    this.animatedValues[square].top.setValue(initialTop + clampedTop);
-  }
+    animatedValues.current[square].left.setValue(initialLeft + clampedLeft);
+    animatedValues.current[square].top.setValue(initialTop + clampedTop);
+  };
 
-  handleTouchEnd(square: number, index: number, { top, left }: ItemSize) {
-    const {
-      puzzle,
-      puzzle: { size },
-      onMoveSquare
-    } = this.props;
-
+  // Make sure if movement cut in half, the square gets to the desired position
+  const handleTouchEnd = (
+    square: number,
+    index: number,
+    { top, left }: ItemSize
+  ) => {
     const itemSize = calculateItemSize(size);
     const move = availableMove(puzzle, square);
 
-    Animated.spring(this.animatedValues[square].scale, {
+    Animated.spring(animatedValues.current[square].scale, {
       toValue: 1,
       friction: 20,
       tension: 200,
@@ -224,17 +228,12 @@ export default class Board extends React.PureComponent<Props, State> {
     ) {
       onMoveSquare(square);
     } else {
-      this.updateSquarePosition(puzzle, square, index);
+      updateSquarePosition(square, index);
     }
-  }
+  };
 
-  renderSquare = (square: number, index: number) => {
-    const {
-      puzzle: { size, empty },
-      image
-    } = this.props;
-    const { transitionState } = this.state;
-
+  // Draw a square on the board
+  const renderSquare = (square: number, index: number) => {
     if (square === empty) return null;
 
     const itemSize = calculateItemSize(size);
@@ -243,9 +242,9 @@ export default class Board extends React.PureComponent<Props, State> {
       <Draggable
         key={square}
         enabled={transitionState === BoardState.DidTransitionIn}
-        onTouchStart={() => this.handleTouchStart(square)}
-        onTouchMove={offset => this.handleTouchMove(square, index, offset)}
-        onTouchEnd={offset => this.handleTouchEnd(square, index, offset)}
+        onTouchStart={() => handleTouchStart(square)}
+        onTouchMove={offset => handleTouchMove(square, index, offset)}
+        onTouchEnd={offset => handleTouchEnd(square, index, offset)}
       >
         {({ handlers, dragging }) => {
           const itemStyle = {
@@ -254,9 +253,9 @@ export default class Board extends React.PureComponent<Props, State> {
             height: itemSize,
             overflow: "hidden",
             transform: [
-              { translateX: this.animatedValues[square].left },
-              { translateY: this.animatedValues[square].top },
-              { scale: this.animatedValues[square].scale }
+              { translateX: animatedValues.current[square].left },
+              { translateY: animatedValues.current[square].top },
+              { scale: animatedValues.current[square].scale }
             ],
             zIndex: dragging ? 1 : 0
           };
@@ -285,23 +284,16 @@ export default class Board extends React.PureComponent<Props, State> {
     );
   };
 
-  render() {
-    const {
-      puzzle: { board }
-    } = this.props;
-    const { transitionState } = this.state;
+  const containerSize = calculateContainerSize();
+  const containerStyle = { width: containerSize, height: containerSize };
 
-    const containerSize = calculateContainerSize();
-    const containerStyle = { width: containerSize, height: containerSize };
-
-    return (
-      <View style={[styles.container, containerStyle]}>
-        {transitionState !== BoardState.DidTransitionOut &&
-          board.map(this.renderSquare)}
-      </View>
-    );
-  }
-}
+  return (
+    <View style={[styles.container, containerStyle]}>
+      {transitionState !== BoardState.DidTransitionOut &&
+        board.map(renderSquare)}
+    </View>
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -314,3 +306,5 @@ const styles = StyleSheet.create<Style>({
     backgroundColor: "#1F1E2A"
   }
 });
+
+export default Board;

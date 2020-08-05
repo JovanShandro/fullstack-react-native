@@ -8,22 +8,20 @@ interface Props {
   moves: number;
 }
 
-export default function Stats({ time, moves }: Props) {
-  return (
-    <View style={styles.container}>
-      <View style={styles.labels}>
-        <Text style={[styles.text, styles.textMargin]}>Time</Text>
-        <Text style={styles.text}>Moves</Text>
-      </View>
-      <View style={styles.values}>
-        <Text style={[styles.text, styles.textMargin, styles.value]}>
-          {formatElapsedTime(time)}
-        </Text>
-        <Text style={[styles.text, styles.value]}>{moves.toString()}</Text>
-      </View>
+const Stats: React.FC<Props> = ({ time, moves }) => (
+  <View style={styles.container}>
+    <View style={styles.labels}>
+      <Text style={[styles.text, styles.textMargin]}>Time</Text>
+      <Text style={styles.text}>Moves</Text>
     </View>
-  );
-}
+    <View style={styles.values}>
+      <Text style={[styles.text, styles.textMargin, styles.value]}>
+        {formatElapsedTime(time)}
+      </Text>
+      <Text style={[styles.text, styles.value]}>{moves.toString()}</Text>
+    </View>
+  </View>
+);
 
 interface Style {
   container: ViewStyle;
@@ -58,3 +56,5 @@ const styles = StyleSheet.create<Style>({
     marginBottom: 10
   }
 });
+
+export default Stats;

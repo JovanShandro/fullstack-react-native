@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Animated,
   Easing,
@@ -18,110 +18,85 @@ const getValue = (pressed: boolean, disabled: boolean) => {
 interface Props {
   title: string;
   onPress(): void;
-  disabled: boolean;
-  height: number;
-  color: string;
-  fontSize: number;
-  borderRadius: number;
+  disabled?: boolean;
+  height?: number;
+  color?: string;
+  fontSize?: number;
+  borderRadius?: number;
 }
 
-interface State {
-  pressed: boolean;
-}
+const Button: React.FC<Props> = ({
+  onPress,
+  disabled = false,
+  height = null,
+  color = "#0CE1C2",
+  fontSize = 24,
+  borderRadius = 100,
+  title
+}) => {
+  const [pressed, setPressed] = useState(false);
+  const value = useRef(new Animated.Value(getValue(false, disabled)));
+  const prevPressed = useRef(pressed);
+  const prevDisabled = useRef(disabled);
 
-export default class Button extends React.Component<Props, State> {
-  static defaultProps = {
-    onPress: () => {},
-    disabled: false,
-    height: null,
-    color: "#0CE1C2",
-    fontSize: 24,
-    borderRadius: 100
-  };
-
-  value: Animated.Value;
-
-  constructor(props: Props) {
-    super(props);
-
-    const { disabled } = props;
-
-    this.state = { pressed: false };
-    this.value = new Animated.Value(getValue(false, disabled));
-  }
-
-  updateValue(nextProps: Props, nextState: State) {
-    if (
-      this.props.disabled !== nextProps.disabled ||
-      this.state.pressed !== nextState.pressed
-    ) {
-      Animated.timing(this.value, {
+  useEffect(() => {
+    if (prevDisabled.current !== disabled || prevPressed.current !== pressed) {
+      Animated.timing(value.current, {
         duration: 200,
-        toValue: getValue(nextState.pressed, nextProps.disabled),
+        toValue: getValue(pressed, disabled),
         easing: Easing.out(Easing.quad),
         useNativeDriver: false
       }).start();
     }
-  }
 
-  UNSAFE_componentWillUpdate(nextProps: Props, nextState: State) {
-    this.updateValue(nextProps, nextState);
-  }
+    prevDisabled.current = disabled;
+    prevPressed.current = pressed;
+  }, [disabled, pressed]);
 
-  UNSAFE_componentWillReceiveProps(nextProps: Props, nextState: State) {
-    this.updateValue(nextProps, nextState);
-  }
-
-  handlePressIn = () => {
-    this.setState({ pressed: true });
+  const handlePressIn = () => {
+    setPressed(true);
   };
 
-  handlePressOut = () => {
-    this.setState({ pressed: false });
+  const handlePressOut = () => {
+    setPressed(false);
   };
 
-  render() {
-    const {
-      props: { title, onPress, color, height, borderRadius, fontSize }
-    } = this;
+  const animatedColor = value.current.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["black", color]
+  });
 
-    const animatedColor = this.value.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["black", color]
-    });
+  const animatedScale = value.current.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.8, 1]
+  });
 
-    const animatedScale = this.value.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.8, 1]
-    });
+  const containerStyle = {
+    borderColor: animatedColor,
+    borderRadius,
+    height,
+    transform: [{ scale: animatedScale }]
+  };
 
-    const containerStyle = {
-      borderColor: animatedColor,
-      borderRadius,
-      height,
-      transform: [{ scale: animatedScale }]
-    };
+  const titleStyle = {
+    color: animatedColor,
+    fontSize
+  };
 
-    const titleStyle = {
-      color: animatedColor,
-      fontSize
-    };
-
-    return (
-      <TouchableWithoutFeedback
-        onPress={onPress}
-        onPressIn={this.handlePressIn}
-        onPressOut={this.handlePressOut}
-      >
-        <Animated.View style={[styles.container, containerStyle]}>
-          <Animated.Text style={[styles.title, titleStyle]}>
-            {title}
-          </Animated.Text>
-        </Animated.View>
-      </TouchableWithoutFeedback>
-    );
-  }
-}
+  return (
+    <TouchableWithoutFeedback
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View style={[styles.container, containerStyle]}>
+        <Animated.Text style={[styles.title, titleStyle]}>
+          {title}
+        </Animated.Text>
+      </Animated.View>
+    </TouchableWithoutFeedback>
+  );
+};
 
 interface Style {
   container: ViewStyle;
@@ -142,3 +117,5 @@ const styles = StyleSheet.create<Style>({
     fontSize: 24
   }
 });
+
+export default Button;

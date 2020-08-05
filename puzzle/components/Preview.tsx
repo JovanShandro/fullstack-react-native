@@ -14,7 +14,7 @@ interface Props {
   image: ImageSourcePropType | null;
   boardSize: number;
 }
-export default function Preview({ image = null, boardSize }: Props) {
+const Preview: React.FC<Props> = ({ image = null, boardSize }) => {
   const itemSize = calculateItemSize(boardSize);
   const scaledSize = itemSize < 80 ? itemSize * 2 + itemMargin : itemSize;
 
@@ -31,7 +31,7 @@ export default function Preview({ image = null, boardSize }: Props) {
       />
     </View>
   );
-}
+};
 
 interface Style {
   container: ViewStyle;
@@ -48,3 +48,5 @@ const styles = StyleSheet.create<Style>({
     resizeMode: "contain"
   }
 });
+
+export default Preview;
